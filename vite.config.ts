@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { viteSingleFile } from 'vite-plugin-singlefile';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  base: './',
+  plugins: [react(), viteSingleFile()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -15,13 +17,5 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
     reportCompressedSize: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          pdfjs: ['pdfjs-dist'],
-          pdflib: ['pdf-lib'],
-        },
-      },
-    },
   },
 });

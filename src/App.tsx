@@ -4,7 +4,7 @@ import DropZone from './components/DropZone';
 import Toolbar from './components/Toolbar';
 import ThumbnailGrid from './components/ThumbnailGrid';
 import { loadPdfDocument, exportPdf, createDownloadLink } from './services/pdfEngine';
-import type { PdfPageInfo, ExportPageSpec, PageRotation } from './types/pdf';
+import type { PdfPageInfo, ExportPageSpec } from './types/pdf';
 import { Loader2, CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 export default function App() {
