@@ -1,0 +1,2 @@
+This is a plain text file, not a valid PDF document.
+It should be rejected when uploaded to PDFEditor.
