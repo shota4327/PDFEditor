@@ -1,72 +1,96 @@
-# Project: PDFEditor (Offline Client-Side PDF Editor)
+# プロジェクト仕様書: PDFEditor (完全オフライン対応 PDF 編集 Web アプリケーション)
 
-## Architecture
-Browser-based single-page web application.
-- **Frontend Framework**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + Lucide Icons + Framer Motion
-- **PDF Engines**:
-  - `pdf-lib` for structural operations (creating PDFs, copying pages, rotating, deleting, merging, exporting Uint8Array)
-  - `pdfjs-dist` for client-side rendering (converting PDF pages into HTML5 Canvas / Data URL image thumbnails offline)
-- **Drag-and-Drop**: `@hello-pangea/dnd` for smooth, responsive page grid reordering and multi-file drag-and-drop file upload zone.
-- **Offline Guarantee**: Bundled `pdfjs` worker asset, zero external HTTP API calls.
+## アーキテクチャ概要
+ブラウザ上で完全に完結するシングルページ Web アプリケーション (SPA) です。
+- **フロントエンドフレームワーク**: React 18 + TypeScript + Vite
+- **スタイリング & UI**: Tailwind CSS + Lucide Icons + Framer Motion
+- **PDF 処理エンジン**:
+  - `pdf-lib`: PDF 構造操作（新規 PDF 作成、ページのコピー・抽出、回転、削除、結合、Uint8Array へのシリアライズ）
+  - `pdfjs-dist`: クライアントサイドでの PDF レンダリング（PDF ページを HTML5 Canvas / JPEG Data URL サムネイル画像へ変換）
+- **ドラッグ＆ドロップ**: `@hello-pangea/dnd` によるグリッド内ページの直感的な順序入れ替え、および複数ファイルの一括ドロップ読み込み
+- **完全オフライン保証**: バンドルされた `pdfjs` Worker アセットを使用し、外部 HTTP API 通信ゼロで動作
 
-## Milestones
-| # | Name | Scope | Dependencies | Status |
-|---|------|-------|-------------|--------|
-| M1 | Project Setup & Architecture | Vite + React + TS setup, Tailwind CSS, Vitest, Playwright infra | none | DONE |
-| M2 | PDF Processing Engine | Service module wrapping `pdf-lib` and `pdfjs-dist` (load, render thumbnails, rotate, delete, merge, export) | M1 | DONE |
-| M3 | UI & Drag-and-Drop Components | Header, File Drop Zone, Thumbnail Grid with drag-and-drop reorder, rotate/delete controls | M1 | DONE |
-| M4 | Integration & Download Pipeline | React state integration, export trigger, offline bundling verification | M2, M3 | DONE |
-| M5 | E2E Testing Track | Playwright automated test suite for Tiers 1-4, `TEST_INFRA.md` creation | M1 | DONE |
-| M6 | E2E Verification & Forensic Audit | Execution of E2E tests, Challenger stress testing, Forensic Auditor integrity check | M4, M5 | DONE |
-| M7 | Zoom Controls & UI/UX Hardening | Thumbnail zoom scaling (50%〜300%), grid drag-and-drop overlap fix, robust offline single-file bundling | M3, M4 | DONE |
+---
 
-## Interface Contracts
-### `pdfEngine.ts` Interface
-- `loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Promise<PdfDocumentData>`
-- `renderPageThumbnail(pdfBytes: Uint8Array, pageIndex: number, scale?: number): Promise<string>` (returns JPEG Data URL)
-- `exportPdf(pages: ExportPageSpec[]): Promise<Uint8Array>`
-- `createDownloadLink(pdfBytes: Uint8Array, filename: string): void`
+## 開発マイルストーン
+| # | マイルストーン名 | スコープ・内容 | 依存関係 | ステータス |
+|---|---|---|---|---|
+| M1 | プロジェクトセットアップ & 基盤構築 | Vite + React + TS 環境構築、Tailwind CSS、Vitest、Playwright テスト基盤 | なし | 完了 (DONE) |
+| M2 | PDF 処理エンジンの実装 | `pdf-lib` と `pdfjs-dist` をラップしたサービスモジュール（読み込み、サムネイル描画、回転、削除、結合、エクスポート） | M1 | 完了 (DONE) |
+| M3 | UI & ドラッグ＆ドロップ実装 | ヘッダー、ファイルドロップゾーン、サムネイルグリッド、並び替え、回転・削除コントロール | M1 | 完了 (DONE) |
+| M4 | 統合 & ダウンロードパイプライン | React 状態管理統合、エクスポート機能、完全オフラインバンドル検証 | M2, M3 | 完了 (DONE) |
+| M5 | E2E 自動テスト構築 | Tier 1〜4 を網羅する Playwright 自動テストスイートおよびテスト仕様書の作成 | M1 | 完了 (DONE) |
+| M6 | E2E 検証 & 整合性監査 | E2E テストの実行、ストレステスト、データ漏洩・完全オフライン監査 | M4, M5 | 完了 (DONE) |
+| M7 | ズーム機能 & UI/UX 強化 | プレビューサムネイルの拡大縮小（50%〜300%）、グリッド重なりバグ修正、単一 HTML バンドル最適化 | M3, M4 | 完了 (DONE) |
 
-## Code Layout
+---
+
+## インターフェース契約 (Interface Contracts)
+
+### `pdfEngine.ts` サービスモジュール
+```typescript
+/**
+ * ファイルまたはバイト配列から PDF を読み込み、メタデータとサムネイルプレビューを生成
+ */
+function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Promise<PdfDocumentData>;
+
+/**
+ * 特定の PDF ページを HTML5 Canvas に描画し、JPEG Data URL を生成
+ */
+function renderPageThumbnail(pdfBytes: Uint8Array, pageIndex: number, scale?: number): Promise<string>;
+
+/**
+ * 指定されたページ順序・回転角度に基づき新規 PDF を結合・構築し、Uint8Array を返却
+ */
+function exportPdf(pages: ExportPageSpec[]): Promise<Uint8Array>;
+
+/**
+ * 生成された PDF バイト列から Blob を作成し、ブラウザのダウンロードを発行
+ */
+function createDownloadLink(pdfBytes: Uint8Array, filename: string): void;
+```
+
+---
+
+## ファイルレイアウト
 ```
 PDFEditor/
-├── package.json
-├── vite.config.ts
-├── tailwind.config.js
-├── postcss.config.js
-├── tsconfig.json
-├── tsconfig.node.json
-├── index.html
-├── .gitignore
+├── package.json              # プロジェクト定義・スクリプト・依存ライブラリ
+├── vite.config.ts            # Vite バンドラおよび単一HTML出力プラグイン設定
+├── tailwind.config.js        # Tailwind CSS スタイル設定
+├── postcss.config.js         # PostCSS プラグイン設定
+├── tsconfig.json             # アプリケーション向け TypeScript 設定
+├── tsconfig.node.json        # ツール・設定ファイル向け TypeScript 設定
+├── index.html                # HTML エントリーポイント
+├── .gitignore                # Git 管理対象外設定
 ├── .gemini/
-│   └── rules.md
+│   └── rules.md              # プロジェクト開発・コーディング原則
 ├── src/
-│   ├── main.tsx
-│   ├── App.tsx
+│   ├── main.tsx              # React アプリケーション起動エントリー
+│   ├── App.tsx               # メインアプリケーションコンポーネント
 │   ├── types/
-│   │   └── pdf.ts
+│   │   └── pdf.ts            # PDF 関連の型定義インターフェース
 │   ├── services/
-│   │   └── pdfEngine.ts
+│   │   └── pdfEngine.ts      # PDF 処理・レンダリングサービス
 │   ├── components/
-│   │   ├── Header.tsx
-│   │   ├── DropZone.tsx
-│   │   ├── ThumbnailGrid.tsx
-│   │   ├── ThumbnailCard.tsx
-│   │   └── Toolbar.tsx
-│   └── index.css
+│   │   ├── Header.tsx        # アプリケーションヘッダー
+│   │   ├── DropZone.tsx      # ファイルドロップゾーン
+│   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（DND対応）
+│   │   ├── ThumbnailCard.tsx # 各ページサムネイルカード
+│   │   └── Toolbar.tsx       # 操作ツールバー（ズーム、削除、出力）
+│   └── index.css             # グローバルスタイル
 ├── tests/
-│   ├── unit/
-│   │   ├── setup.ts
-│   │   ├── pdfEngine.test.ts
-│   │   ├── pdfHelpers.test.ts
-│   │   ├── components.test.tsx
-│   │   └── generateFixtures.test.ts
-│   └── e2e/
-│       ├── fixtures/
-│       ├── helpers/
-│       └── pdfEditor.spec.ts
-├── PROJECT.md
-├── TEST_INFRA.md
-└── README.md
+│   ├── unit/                 # Vitest 単体テストスイート
+│   │   ├── setup.ts          # テスト初期化モック設定
+│   │   ├── pdfEngine.test.ts # エンジン単体テスト
+│   │   ├── pdfHelpers.test.ts# ヘルパー単体テスト
+│   │   ├── components.test.tsx # UI コンポーネント単体テスト
+│   │   └── generateFixtures.test.ts # テスト用 PDF 生成テスト
+│   └── e2e/                  # Playwright E2E テストスイート
+│       ├── fixtures/         # テスト用サンプル PDF ファイル
+│       ├── helpers/          # テスト補助モジュール（PDF検証等）
+│       └── pdfEditor.spec.ts # 4層 E2E 総合テスト
+├── PROJECT.md                # 本設計仕様書
+├── TEST_INFRA.md             # テスト設計・セレクタ仕様書
+└── README.md                 # プロジェクト概要・利用手順
 ```

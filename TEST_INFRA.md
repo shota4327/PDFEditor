@@ -1,107 +1,107 @@
-# TEST_INFRA.md — PDFEditor Testing Methodology & Architecture
+# TEST_INFRA.md — PDFEditor テスト設計および検証アーキテクチャ
 
-## 1. Opaque-Box Requirement-Driven Testing Methodology
+## 1. 要件駆動・ブラックボックステスト手法
 
-The testing strategy for PDFEditor is built upon an **opaque-box (black-box) requirement-driven testing methodology**. 
+PDFEditor のテスト戦略は、**要件駆動型のブラックボックステスト手法**に基づいて構築されています。
 
-### Core Principles:
-- **Zero Internal Knowledge Coupling**: Tests interact strictly with the application via user-facing interfaces (DOM events, button clicks, file inputs, download events, and network boundaries). Tests do not mock or depend on React internal state, internal functions, or sub-component properties.
-- **Requirement-Driven Verification**: Every test case directly verifies a requirement specified in `PROJECT.md` and user workflows.
-- **Genuine Artifact Validation**: Instead of mocking the PDF export module or assuming output correctness, exported PDF files are downloaded during Playwright test runs and inspected using `pdf-lib` to verify physical page counts, page rotation metadata, and binary integrity.
-- **Strict Network & Offline Auditing**: External HTTP request listeners (`page.on('request')`) and Playwright offline context setting (`context.setOffline(true)`) enforce the core architectural constraint: **100% offline client-side execution with ZERO external data leakage**.
-
----
-
-## 2. Feature Inventory
-
-| Feature ID | Category | Feature Description | User Interface Trigger | Expected Behavior |
-|------------|----------|---------------------|------------------------|-------------------|
-| **FEAT-01** | Upload | Multi-File Upload | Drag & Drop onto `[data-testid="dropzone"]` or input file via `[data-testid="file-input"]` | All pages from uploaded PDFs are rendered as thumbnail cards in order. |
-| **FEAT-02** | Preview | Page Thumbnail Previews | Grid container `[data-testid="thumbnail-grid"]` | Render HTML5 Canvas/Data URL image preview for each page with page badge and filename. |
-| **FEAT-03** | Manipulation | 90° Clockwise Rotation | Button `[data-testid="rotate-cw-btn"]` on thumbnail card | Increments page rotation angle by +90° (0° -> 90° -> 180° -> 270° -> 0° wrap). |
-| **FEAT-04** | Manipulation | 90° Counter-Clockwise Rotation | Button `[data-testid="rotate-ccw-btn"]` on thumbnail card | Decrements page rotation angle by -90° (0° -> 270° -> 180° -> 90° -> 0° wrap). |
-| **FEAT-05** | Manipulation | Drag-and-Drop Reorder | Drag handle `[data-testid="drag-handle"]` on thumbnail card | Reorders pages within the grid and updates the output sequence accordingly. |
-| **FEAT-06** | Manipulation | Page Deletion | Button `[data-testid="delete-page-btn"]` on thumbnail card | Removes page from grid, updates total page count indicator. |
-| **FEAT-07** | Export | PDF Export & Download | Button `[data-testid="export-btn"]` in toolbar | Merges, rotates, and compiles pages into a single PDF binary and triggers standard browser download. |
-| **FEAT-08** | Boundary | Empty Upload State | Initial page load without files | Dropzone displayed; Toolbar & Export buttons disabled/hidden; zero page cards. |
-| **FEAT-09** | Security | Non-PDF File Rejection | Drag or upload invalid file (e.g. `.txt`) | Displays Japanese error alert (`[data-testid="error-message"]`) and rejects loading. |
-| **FEAT-10** | Offline | Network Isolation Audit | Any UI operation during app lifecycle | Zero HTTP/HTTPS requests to external hosts (only `localhost`/`127.0.0.1`/`data:`/`blob:` permitted). |
-| **FEAT-11** | Zoom | Thumbnail Scaling | Buttons `[data-testid="zoom-in-btn"]`, `[data-testid="zoom-out-btn"]`, `[data-testid="zoom-reset-btn"]` | Dynamically resizes preview thumbnail grid cards between 50% and 300%. |
+### 基本原則:
+- **内部実装との完全な疎結合**: テストはユーザーに公開されたインターフェース（DOM イベント、ボタンクリック、ファイル選択、ダウンロードイベント、ネットワーク境界）のみを通じて行います。React の内部状態やプライベート関数に依存・モックしません。
+- **要件駆動の検証**: すべてのテストケースは、[`PROJECT.md`](file:///c:/Git/PDFEditor/PROJECT.md) に定義された要件および実際のユーザーワークフローを直接検証します。
+- **実ファイル（バイナリ）の整合性検証**: PDF 出力モジュールをモックするのではなく、Playwright のテスト実行中にダウンロードされた実際の `.pdf` ファイルを `pdf-lib` で解析し、物理的な総ページ数、回転メタデータ、バイナリの完全性を監査します。
+- **完全オフライン & ネットワーク隔離の監査**: 外部 HTTP リクエストの監視（`page.on('request')`）および Playwright のオフラインコンテキスト設定（`context.setOffline(true)`）により、**外部通信ゼロ・完全クライアントサイド実行**を厳格に保証します。
 
 ---
 
-## 3. 4-Tier Coverage Plan
+## 2. 機能インベントリ (Feature Inventory)
 
-Our E2E test suite in `tests/e2e/pdfEditor.spec.ts` is organized into 4 distinct tiers:
-
-### Tier 1: Feature Coverage
-Focuses on verifying each individual feature independently under standard operating conditions.
-- **T1.1 Multi-File Upload**: Uploading 1-page and 3-page PDFs simultaneously populates 4 thumbnail cards and updates page count indicator to `4`.
-- **T1.2 Thumbnail Previews**: Verifies `<img>` elements in thumbnail cards render valid `data:image/` Data URLs.
-- **T1.3 Rotation Controls**: Verifies clicking CW (+90°) and CCW (-90°) updates `[data-testid="rotation-badge"]` and `data-rotation` DOM attributes.
-- **T1.4 Drag-and-Drop Reordering**: Verifies dragging page cards updates sequence order in the grid.
-- **T1.5 Page Deletion**: Verifies deleting a page removes card DOM element and updates total page count.
-- **T1.6 PDF Export Download**: Verifies clicking Export triggers browser download of a valid `.pdf` file.
-- **T1.7 Zoom Controls & Scaled Previews**: Verifies Zoom In, Zoom Out, and Reset buttons dynamically adjust thumbnail size and enforce min/max bounds.
-
-### Tier 2: Boundary & Corner Cases
-Focuses on edge cases, invalid inputs, state transitions, and numerical boundary conditions.
-- **T2.1 Empty State**: Verifies initial page load renders empty state notice ("まだページが読み込まれていません") and hides export toolbar.
-- **T2.2 Single-Page PDF**: Verifies loading, rotating, and exporting a 1-page PDF.
-- **T2.3 Multi-Page PDF**: Verifies loading and indexing a 3-page PDF with correct sequential page numbers (`Page 1`, `Page 2`, `Page 3`).
-- **T2.4 360° Rotation Wrap**: Verifies rotation wrap-around (0° -> 90° -> 180° -> 270° -> 0° CW, and 0° -> 270° CCW).
-- **T2.5 Non-PDF File Handling**: Verifies uploading `.txt` file triggers `[data-testid="error-message"]` ("無効なファイル形式です...") and keeps page list empty.
-
-### Tier 3: Cross-Feature Combinations
-Focuses on complex multi-step workflows representing realistic user editing sessions.
-- **T3.1 End-to-End Edit Workflow**:
-  1. Multi-file upload (`sample-1page.pdf` + `sample-2pages.pdf` = 3 pages).
-  2. Rotate Page 1 by 90° CW.
-  3. Rotate Page 3 by 180° CW.
-  4. Delete Page 2 (reducing total to 2 pages).
-  5. Reorder remaining pages.
-  6. Export PDF download.
-  7. Audit exported PDF file via `inspectPdfFile()` (`pdf-lib`) to confirm exact page count (2) and rotation attributes.
-
-### Tier 4: Real-World Scenarios & Offline Validation
-Focuses on strict non-functional constraints, privacy guarantees, and network resilience.
-- **T4.1 Zero External HTTP Requests**: Listens to all browser `request` events during an entire edit workflow. Asserts `externalRequests` list is strictly empty (`[]`).
-- **T4.2 Full Offline Operation**: Invokes `context.setOffline(true)` before file upload and performs full upload-rotate-delete-export flow while completely offline. Verifies PDF export succeeds without network connectivity.
+| 機能 ID | カテゴリ | 機能概要 | 操作トリガー (UI) | 期待される動作 |
+|---|---|---|---|---|
+| **FEAT-01** | アップロード | 複数ファイルの一括読み込み | `[data-testid="dropzone"]` への DND または `[data-testid="file-input"]` からの選択 | 読み込まれた全 PDF の全ページが順序通りサムネイルカードとして描画される |
+| **FEAT-02** | プレビュー | ページサムネイル表示 | グリッドコンテナ `[data-testid="thumbnail-grid"]` | HTML5 Canvas / Data URL により各ページのプレビュー、ページ番号、ファイル名を表示 |
+| **FEAT-03** | ページ操作 | 時計回り 90 度回転 | サムネイルカード上の `[data-testid="rotate-cw-btn"]` | ページの回転角度を +90 度加算（0° → 90° → 180° → 270° → 0° ループ） |
+| **FEAT-04** | ページ操作 | 反時計回り 90 度回転 | サムネイルカード上の `[data-testid="rotate-ccw-btn"]` | ページの回転角度を -90 度減算（0° → 270° → 180° → 90° → 0° ループ） |
+| **FEAT-05** | ページ操作 | ドラッグ＆ドロップ並び替え | サムネイルカード上のドラッグハンドル `[data-testid="drag-handle"]` | グリッド内のカード順序を入れ替え、出力シーケンスを更新 |
+| **FEAT-06** | ページ操作 | 個別ページ削除 | サムネイルカード上の `[data-testid="delete-page-btn"]` | 指定ページをグリッドから削除し、総ページ数表示を更新 |
+| **FEAT-07** | エクスポート | PDF 出力 & ダウンロード | ツールバーの `[data-testid="export-btn"]` | 順序・回転を反映した新規 PDF バイナリをコンパイルし、ブラウザダウンロードを発行 |
+| **FEAT-08** | 境界条件 | 初期未読み込み状態 | ファイル未読み込み時の初期表示 | ドロップゾーンが表示され、ツールバーと出力ボタンが無効/非表示となる |
+| **FEAT-09** | エラー処理 | 非対応ファイルの拒絶 | 非 PDF ファイル（`.txt` 等）のアップロード | 日本語エラーアラート（`[data-testid="error-message"]`）を表示し読み込みを拒絶 |
+| **FEAT-10** | オフライン | 外部ネットワーク遮断監査 | アプリ利用中の全操作 | 外部ホストへの HTTP/HTTPS リクエストが 0 件（`localhost`/`127.0.0.1`/`data:`/`blob:` のみ許可） |
+| **FEAT-11** | ズーム | サムネイル表示倍率調整 | `[data-testid="zoom-in-btn"]`, `[data-testid="zoom-out-btn"]`, `[data-testid="zoom-reset-btn"]` | サムネイルグリッドのカードサイズを 50% 〜 300% の範囲で動的に拡大・縮小・リセット |
 
 ---
 
-## 4. Test Execution & Commands
+## 3. 4層テストカバレッジ計画 (4-Tier Coverage Plan)
 
-| Command | Description |
+E2E テストスイート（`tests/e2e/pdfEditor.spec.ts`）は 4 つの階層で構成されています：
+
+### Tier 1: 機能単体カバレッジ (Feature Coverage)
+標準的な利用条件下で各機能を個別に検証します。
+- **T1.1 複数ファイルアップロード**: 1 ページと 3 ページの PDF を同時に読み込み、4 枚のサムネイルカードと総ページ数バッジが「4」になることを検証。
+- **T1.2 サムネイル描画**: サムネイルカード内の `<img>` 要素が有効な `data:image/` Data URL で描画されていることを検証。
+- **T1.3 回転コントロール**: 時計回り（+90°）および反時計回り（-90°）ボタンを押した際、`[data-testid="rotation-badge"]` と DOM 属性が更新されることを検証。
+- **T1.4 ドラッグ＆ドロップ並び替え**: カードのドラッグ操作によりグリッド内の順序が入れ替わることを検証。
+- **T1.5 ページ削除**: 削除ボタンを押した際に対象カードが消去され、総ページ数表示が減少することを検証。
+- **T1.6 PDF エクスポートダウンロード**: 出力ボタンによりブラウザのダウンロードがトリガーされ、有効な `.pdf` ファイルが生成されることを検証。
+- **T1.7 ズームコントロール & プレビュー拡大縮小**: 拡大・縮小・リセットボタンによりサムネイルサイズが動的に変更され、上限（300%）・下限（50%）が正しく制御されることを検証。
+
+### Tier 2: 境界値 & コーナーケース (Boundary & Corner Cases)
+エッジケース、無効な入力、状態遷移、数値境界を検証します。
+- **T2.1 初期状態**: 初期表示時に「まだページが読み込まれていません」の通知が表示され、出力ツールバーが非表示であることを検証。
+- **T2.2 単一ページ PDF**: 1 ページのみの PDF を読み込み、回転およびエクスポートが正常に行えることを検証。
+- **T2.3 複数ページ PDF**: 3 ページの PDF を読み込み、ページ番号（「Page 1」「Page 2」「Page 3」）が正しく採番されることを検証。
+- **T2.4 360 度回転ループ**: 連続回転による 360 度一周（0° → 90° → 180° → 270° → 0°）および逆回転を検証。
+- **T2.5 非 PDF ファイル処理**: `.txt` などの非対応ファイルをアップロードした際に、エラーメッセージが表示されリストに追加されないことを検証。
+
+### Tier 3: 複合ワークフロー (Cross-Feature Combinations)
+ユーザーの実際の編集セッションを模した複合的な複数ステップ操作を検証します。
+- **T3.1 エンドツーエンド編集ワークフロー**:
+  1. 複数ファイル読み込み（`sample-1page.pdf` + `sample-2pages.pdf` = 計 3 ページ）
+  2. 1 ページ目を 90 度時計回り回転
+  3. 3 ページ目を 180 度回転
+  4. 2 ページ目を削除（計 2 ページへ減少）
+  5. 残りのページ順序を並び替え
+  6. PDF をエクスポートダウンロード
+  7. 出力された実 PDF を `pdfInspect.ts`（`pdf-lib`）でバイナリ解析し、ページ数（2 ページ）と回転角度が正確に反映されていることを確認
+
+### Tier 4: 実環境シナリオ & 完全オフライン検証 (Offline Validation)
+プライバシー保護およびネットワーク隔離を検証します。
+- **T4.1 外部 HTTP 通信ゼロの検証**: 一連の操作中の全ブラウザリクエストを監視し、外部通信リストが完全に空（0 件）であることをアサート。
+- **T4.2 完全オフライン動作検証**: ブラウザをオフラインモード（`context.setOffline(true)`）に設定した状態で、アップロード〜回転〜削除〜エクスポートの全工程がエラーなく完結することを検証。
+
+---
+
+## 4. テスト実行コマンド
+
+| コマンド | 説明 |
 |---|---|
-| `npm test` | Runs Vitest unit test suite (`tests/unit/**/*.test.ts(x)`) |
-| `npm run test:e2e` | Runs Playwright 4-Tier E2E test suite in headless Chromium |
-| `npm run test:e2e -- --ui` | Opens interactive Playwright UI mode for visual debugging |
+| `npm test` | Vitest による単体テストスイートを実行 (`tests/unit/**/*.test.ts(x)`) |
+| `npm run test:e2e` | Playwright による 4 層 E2E テストスイートをヘッドレス Chromium で実行 |
+| `npm run test:e2e -- --ui` | Playwright のインタラクティブ UI モードでテストを実行（視覚的デバッグ） |
 
 ---
 
-## 5. Test Architecture & Directory Structure
+## 5. テスト構成 & ディレクトリ構造
 
 ```
 PDFEditor/
-├── TEST_INFRA.md                  # Testing methodology & architecture documentation
-├── playwright.config.ts           # Playwright E2E configuration & dev webServer launch
-├── vitest.config.ts               # Vitest unit test configuration
+├── TEST_INFRA.md                  # 本テスト設計仕様書
+├── playwright.config.ts           # Playwright E2E 設定（dev サーバー自動起動含む）
+├── vitest.config.ts               # Vitest 単体テスト設定
 ├── tests/
-│   ├── unit/                      # Vitest unit test suite
-│   │   ├── setup.ts
-│   │   ├── pdfEngine.test.ts
-│   │   ├── pdfHelpers.test.ts
-│   │   ├── components.test.tsx
-│   │   └── generateFixtures.test.ts
-│   └── e2e/
-│       ├── fixtures/              # Test sample PDFs and invalid files
+│   ├── unit/                      # 単体テストスイート
+│   │   ├── setup.ts               # テスト環境モック初期化
+│   │   ├── pdfEngine.test.ts      # PDF エンジン単体テスト
+│   │   ├── pdfHelpers.test.ts     # ヘルパー単体テスト
+│   │   ├── components.test.tsx    # コンポーネント単体テスト
+│   │   └── generateFixtures.test.ts # フィクスチャ生成テスト
+│   └── e2e/                       # E2E 総合テストスイート
+│       ├── fixtures/              # テスト用サンプル PDF ファイル
 │       │   ├── sample-1page.pdf
 │       │   ├── sample-2pages.pdf
 │       │   ├── sample-3pages.pdf
 │       │   └── invalid-file.txt
 │       ├── helpers/
-│       │   ├── fixtureGenerator.ts # Generates test PDF files using pdf-lib on setup
-│       │   └── pdfInspect.ts       # Independent PDF binary verification helper using pdf-lib
-│       └── pdfEditor.spec.ts      # Complete 4-Tier Playwright E2E test suite
+│       │   ├── fixtureGenerator.ts # pdf-lib を用いたテスト用 PDF 自動生成
+│       │   └── pdfInspect.ts       # ダウンロードされた PDF のバイナリ検査ヘルパー
+│       └── pdfEditor.spec.ts      # 4層 E2E 自動テスト本体
 ```
