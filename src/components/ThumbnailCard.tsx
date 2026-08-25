@@ -1,23 +1,43 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { RotateCw, RotateCcw, Trash2, GripVertical, FileText } from 'lucide-react';
+import type { DraggableProvidedDraggableProps, DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import type { PdfPageInfo } from '../types/pdf';
 
+/**
+ * ページサムネイルカードのプロパティ定義
+ */
 interface ThumbnailCardProps {
+  /** ページ情報 */
   page: PdfPageInfo;
+  /** グリッド内インデックス */
   index?: number;
+  /** 表示用ページ番号インデックス */
   displayIndex?: number;
+  /** 回転コールバック（方向指定） */
   onRotate?: (pageId: string, direction: 'cw' | 'ccw') => void;
+  /** 時計回り回転コールバック */
   onRotateCW?: (pageId: string) => void;
+  /** 反時計回り回転コールバック */
   onRotateCCW?: (pageId: string) => void;
+  /** ページ削除コールバック */
   onDelete: (pageId: string) => void;
-  dragHandleProps?: any;
-  draggableProps?: any;
+  /** DND ドラッグハンドルプロパティ */
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
+  /** DND ドラッガブル要素プロパティ */
+  draggableProps?: DraggableProvidedDraggableProps;
+  /** DND DOM 参照コールバック */
   innerRef?: (element?: HTMLElement | null) => void;
+  /** ドラッグ中状態フラグ */
   isDragging?: boolean;
+  /** サムネイルエリアの基準高さ（px） */
   thumbnailHeight?: number;
+  /** 現在のズーム倍率 */
   zoomLevel?: number;
 }
 
+/**
+ * 個別 PDF ページのプレビュー表示、回転、削除、ドラッグハンドルを提供するカード
+ */
 export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   page,
   index,

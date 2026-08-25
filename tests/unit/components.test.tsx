@@ -5,6 +5,7 @@ import DropZone from '../../src/components/DropZone';
 import ThumbnailCard from '../../src/components/ThumbnailCard';
 import ThumbnailGrid from '../../src/components/ThumbnailGrid';
 import Toolbar from '../../src/components/Toolbar';
+import Toast from '../../src/components/Toast';
 import type { PdfPage } from '../../src/types/pdf';
 
 describe('UI Components', () => {
@@ -151,6 +152,7 @@ describe('UI Components', () => {
       expect(screen.getByText('すべて左回転')).toBeInTheDocument();
       expect(screen.getByText('すべて右回転')).toBeInTheDocument();
       expect(screen.getByText('PDFを出力')).toBeInTheDocument();
+      expect(screen.getByTestId('page-count')).toHaveTextContent('5');
 
       const rotateAllCwBtn = screen.getByTestId('rotate-all-cw-btn');
       fireEvent.click(rotateAllCwBtn);
@@ -206,11 +208,11 @@ describe('UI Components', () => {
       fireEvent.click(zoomOutBtn);
       expect(handleZoomOut).toHaveBeenCalledTimes(1);
 
-      // Re-render at 300% zoom with onZoomChange
+      // Re-render at 200% zoom with onZoomChange
       rerender(
         <Toolbar
           pageCount={2}
-          zoomLevel={300}
+          zoomLevel={200}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onZoomReset={handleZoomReset}
@@ -220,7 +222,7 @@ describe('UI Components', () => {
         />
       );
 
-      expect(screen.getByTestId('zoom-level-indicator')).toHaveTextContent('300%');
+      expect(screen.getByTestId('zoom-level-indicator')).toHaveTextContent('200%');
       fireEvent.change(screen.getByTestId('zoom-slider'), { target: { value: '150' } });
       expect(handleZoomChange).toHaveBeenCalledWith(150);
       expect(screen.getByTestId('zoom-in-btn')).toBeDisabled();
@@ -244,6 +246,28 @@ describe('UI Components', () => {
 
       expect(screen.getByTestId('zoom-level-indicator')).toHaveTextContent('50%');
       expect(screen.getByTestId('zoom-out-btn')).toBeDisabled();
+    });
+  });
+
+  describe('Toast', () => {
+    it('renders toast notification message and triggers onDismiss', () => {
+      const handleDismiss = vi.fn();
+      render(
+        <Toast
+          toast={{ message: 'テスト通知メッセージ', type: 'success' }}
+          onDismiss={handleDismiss}
+        />
+      );
+
+      expect(screen.getByText('テスト通知メッセージ')).toBeInTheDocument();
+      const closeBtn = screen.getByRole('button', { name: /閉じる/i });
+      fireEvent.click(closeBtn);
+      expect(handleDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns null when toast is null', () => {
+      const { container } = render(<Toast toast={null} onDismiss={vi.fn()} />);
+      expect(container.firstChild).toBeNull();
     });
   });
 });

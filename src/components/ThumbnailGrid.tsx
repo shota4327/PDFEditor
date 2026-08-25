@@ -8,16 +8,29 @@ import {
 import ThumbnailCard from './ThumbnailCard';
 import type { PdfPageInfo } from '../types/pdf';
 
+/**
+ * サムネイルグリッドコンポーネントのプロパティ定義
+ */
 interface ThumbnailGridProps {
+  /** 表示対象のページ情報配列 */
   pages: PdfPageInfo[];
+  /** ドラッグ＆ドロップ並び替えコールバック */
   onReorder: (startIndex: number, endIndex: number) => void;
+  /** 回転コールバック（方向指定） */
   onRotate?: (pageId: string, direction: 'cw' | 'ccw') => void;
+  /** 時計回り回転コールバック */
   onRotateCW?: (pageId: string) => void;
+  /** 反時計回り回転コールバック */
   onRotateCCW?: (pageId: string) => void;
+  /** ページ削除コールバック */
   onDelete: (pageId: string) => void;
+  /** 現在のズーム倍率 */
   zoomLevel?: number;
 }
 
+/**
+ * 読み込まれた全ページのサムネイルカードをレスポンシブなグリッドで配置し、DND並び替えを提供するコンポーネント
+ */
 export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   pages,
   onReorder,

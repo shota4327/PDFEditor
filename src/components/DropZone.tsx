@@ -1,15 +1,27 @@
 import React, { useRef, useState } from 'react';
 import { UploadCloud, FilePlus, Loader2, FileWarning } from 'lucide-react';
 
+/**
+ * ファイルドロップゾーンコンポーネントのプロパティ定義
+ */
 interface DropZoneProps {
+  /** ファイル選択時のコールバック */
   onFilesSelected?: (files: File[]) => void;
+  /** 追加ファイル選択時のコールバック */
   onFilesAdded?: (files: File[]) => void;
+  /** 表示するエラーメッセージ（無効ファイル等） */
   errorMessage?: string | null;
+  /** エラーメッセージ消去コールバック */
   onErrorDismiss?: () => void;
+  /** 読み込み処理中フラグ */
   isProcessing?: boolean;
+  /** コンパクト表示モードフラグ */
   compact?: boolean;
 }
 
+/**
+ * PDF ファイルのドラッグ＆ドロップおよび選択ダイアログを提供するドロップゾーン
+ */
 export const DropZone: React.FC<DropZoneProps> = ({
   onFilesSelected,
   onFilesAdded,

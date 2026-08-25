@@ -46,7 +46,7 @@ describe('pdfEngine service', () => {
 
     it('throws error for invalid file input type', async () => {
       // @ts-expect-error Testing invalid input at runtime
-      await expect(loadPdfDocument(12345)).rejects.toThrow('Unsupported file input type');
+      await expect(loadPdfDocument(12345)).rejects.toThrow('サポートされていないファイル形式です');
     });
   });
 

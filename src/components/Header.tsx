@@ -1,6 +1,10 @@
 import React from 'react';
 import { FileText, ShieldCheck } from 'lucide-react';
 
+/**
+ * アプリケーションの共通ヘッダーコンポーネント
+ * アプリ名およびオフライン保証バッジを表示します
+ */
 export const Header: React.FC = () => {
   return (
     <header

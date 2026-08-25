@@ -3,20 +3,23 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.js?url';
 import type { PdfDocumentData, PdfPageInfo, ExportPageSpec, PageRotation } from '../types/pdf';
 
-// Configure pdfjs-dist GlobalWorkerOptions workerSrc using Vite local asset import
+// Vite のローカルアセット取り込みを使用して pdfjs-dist の workerSrc を設定
 if (typeof window !== 'undefined') {
   if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
-    // In Node / Vitest jsdom environment, require standard module path for fake worker
+    // Node / Vitest jsdom 環境では fake worker 用に空文字を設定
     pdfjsLib.GlobalWorkerOptions.workerSrc = '';
   } else {
-    // In browser / Vite environment, use Vite ?url asset import path
+    // ブラウザ / Vite 環境では Vite の ?url アセットパスを利用
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
   }
 }
 
 /**
- * Loads a PDF document from a File, ArrayBuffer, or Uint8Array.
- * Extracts document metadata, page count, initial page rotations, and generates thumbnail previews.
+ * File, ArrayBuffer, または Uint8Array から PDF ドキュメントを読み込みます。
+ * ドキュメントメタデータ、ページ数、初期回転角度を取得し、各ページのサムネイルプレビューを生成します。
+ *
+ * @param file 読み込み対象の PDF ファイルまたはバイナリデータ
+ * @returns 読み込まれた PDF ドキュメントデータ
  */
 export async function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Promise<PdfDocumentData> {
   let pdfBytes: Uint8Array;
@@ -31,7 +34,7 @@ export async function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Pr
   } else if (file instanceof ArrayBuffer) {
     pdfBytes = new Uint8Array(file);
   } else {
-    throw new Error('Unsupported file input type for loadPdfDocument');
+    throw new Error('サポートされていないファイル形式です。有効な PDF データを指定してください。');
   }
 
   const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
@@ -49,7 +52,7 @@ export async function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Pr
     try {
       thumbnailUrl = await renderPageThumbnail(pdfBytes, i);
     } catch (e) {
-      console.warn(`Failed to render thumbnail for page ${i} of ${fileName}:`, e);
+      console.warn(`ページ ${i + 1} (${fileName}) のサムネイル生成に失敗しました:`, e);
     }
 
     pages.push({
@@ -73,7 +76,12 @@ export async function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Pr
 }
 
 /**
- * Renders a thumbnail preview of a specific PDF page onto an HTML5 Canvas and returns a JPEG Data URL.
+ * 特定の PDF ページを HTML5 Canvas にレンダリングし、JPEG Data URL を生成します。
+ *
+ * @param pdfBytes PDF ドキュメントのバイナリバイト列
+ * @param pageIndex レンダリングするページインデックス（0始まり）
+ * @param scale レンダリング倍率（省略時は横幅1200pxを基準に自動計算）
+ * @returns レンダリングされた画像の Data URL
  */
 export async function renderPageThumbnail(
   pdfBytes: Uint8Array,
@@ -84,7 +92,7 @@ export async function renderPageThumbnail(
   const pdfDoc = await loadingTask.promise;
 
   try {
-    const page = await pdfDoc.getPage(pageIndex + 1); // pdfjs is 1-indexed
+    const page = await pdfDoc.getPage(pageIndex + 1); // pdfjs は 1 始まり
 
     const unscaledViewport = page.getViewport({ scale: 1.0 });
     const targetWidth = 1200;
@@ -95,13 +103,13 @@ export async function renderPageThumbnail(
     const context = canvas.getContext('2d');
 
     if (!context) {
-      throw new Error('Canvas 2D context is not available');
+      throw new Error('Canvas 2D コンテキストが利用できません');
     }
 
     canvas.width = Math.max(1, Math.floor(viewport.width));
     canvas.height = Math.max(1, Math.floor(viewport.height));
 
-    // Fill canvas with white background (PDF paper background)
+    // Canvas を白色（用紙の背景色）で初期化
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -118,8 +126,11 @@ export async function renderPageThumbnail(
 }
 
 /**
- * Exports a new PDF Uint8Array based on an ordered list of page specifications,
- * allowing merging across multiple documents, reordering, deletion, and rotation.
+ * 順序付けられたページ指定リストに基づいて新規 PDF を生成・結合し、Uint8Array を返却します。
+ * 複数ドキュメントからのページ結合、並び替え、削除、回転角度が反映されます。
+ *
+ * @param pages エクスポート対象のページ仕様配列
+ * @returns 生成された新規 PDF のバイナリバイト列
  */
 export async function exportPdf(pages: ExportPageSpec[]): Promise<Uint8Array> {
   const newPdfDoc = await PDFDocument.create();
@@ -145,7 +156,10 @@ export async function exportPdf(pages: ExportPageSpec[]): Promise<Uint8Array> {
 }
 
 /**
- * Creates an in-memory Object URL Blob and triggers a browser download for the exported PDF.
+ * メモリ上の Blob URL を作成し、ブラウザのダウンロードを発行して即座に URL を解放します。
+ *
+ * @param pdfBytes 保存対象の PDF バイト列
+ * @param filename ダウンロードファイル名
  */
 export function createDownloadLink(pdfBytes: Uint8Array, filename: string): void {
   const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
