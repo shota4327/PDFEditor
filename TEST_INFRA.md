@@ -26,6 +26,7 @@ The testing strategy for PDFEditor is built upon an **opaque-box (black-box) req
 | **FEAT-08** | Boundary | Empty Upload State | Initial page load without files | Dropzone displayed; Toolbar & Export buttons disabled/hidden; zero page cards. |
 | **FEAT-09** | Security | Non-PDF File Rejection | Drag or upload invalid file (e.g. `.txt`) | Displays Japanese error alert (`[data-testid="error-message"]`) and rejects loading. |
 | **FEAT-10** | Offline | Network Isolation Audit | Any UI operation during app lifecycle | Zero HTTP/HTTPS requests to external hosts (only `localhost`/`127.0.0.1`/`data:`/`blob:` permitted). |
+| **FEAT-11** | Zoom | Thumbnail Scaling | Buttons `[data-testid="zoom-in-btn"]`, `[data-testid="zoom-out-btn"]`, `[data-testid="zoom-reset-btn"]` | Dynamically resizes preview thumbnail grid cards between 50% and 300%. |
 
 ---
 
@@ -41,6 +42,7 @@ Focuses on verifying each individual feature independently under standard operat
 - **T1.4 Drag-and-Drop Reordering**: Verifies dragging page cards updates sequence order in the grid.
 - **T1.5 Page Deletion**: Verifies deleting a page removes card DOM element and updates total page count.
 - **T1.6 PDF Export Download**: Verifies clicking Export triggers browser download of a valid `.pdf` file.
+- **T1.7 Zoom Controls & Scaled Previews**: Verifies Zoom In, Zoom Out, and Reset buttons dynamically adjust thumbnail size and enforce min/max bounds.
 
 ### Tier 2: Boundary & Corner Cases
 Focuses on edge cases, invalid inputs, state transitions, and numerical boundary conditions.
@@ -68,15 +70,30 @@ Focuses on strict non-functional constraints, privacy guarantees, and network re
 
 ---
 
-## 4. Test Architecture & Directory Structure
+## 4. Test Execution & Commands
+
+| Command | Description |
+|---|---|
+| `npm test` | Runs Vitest unit test suite (`tests/unit/**/*.test.ts(x)`) |
+| `npm run test:e2e` | Runs Playwright 4-Tier E2E test suite in headless Chromium |
+| `npm run test:e2e -- --ui` | Opens interactive Playwright UI mode for visual debugging |
+
+---
+
+## 5. Test Architecture & Directory Structure
 
 ```
 PDFEditor/
 ├── TEST_INFRA.md                  # Testing methodology & architecture documentation
-├── TEST_READY.md                  # Test runner instructions & coverage summary
 ├── playwright.config.ts           # Playwright E2E configuration & dev webServer launch
+├── vitest.config.ts               # Vitest unit test configuration
 ├── tests/
 │   ├── unit/                      # Vitest unit test suite
+│   │   ├── setup.ts
+│   │   ├── pdfEngine.test.ts
+│   │   ├── pdfHelpers.test.ts
+│   │   ├── components.test.tsx
+│   │   └── generateFixtures.test.ts
 │   └── e2e/
 │       ├── fixtures/              # Test sample PDFs and invalid files
 │       │   ├── sample-1page.pdf
@@ -88,7 +105,3 @@ PDFEditor/
 │       │   └── pdfInspect.ts       # Independent PDF binary verification helper using pdf-lib
 │       └── pdfEditor.spec.ts      # Complete 4-Tier Playwright E2E test suite
 ```
-
-### Key Infrastructure Helpers:
-1. **`fixtureGenerator.ts`**: Uses `pdf-lib` to dynamically generate valid PDF test fixtures (`sample-1page.pdf`, `sample-2pages.pdf`, `sample-3pages.pdf`) before test execution, ensuring zero reliance on external external test assets.
-2. **`pdfInspect.ts`**: Provides `inspectPdfFile(filePath)` to parse downloaded output PDFs using `pdf-lib` to verify page counts, dimensions, and rotation angles without relying on UI assertions alone.
