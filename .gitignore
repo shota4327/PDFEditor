@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Production & Build outputs
+dist/
+dist_*/
+out/
+out.css
+
+# Logs & Error files
+*.log
+build.log
+build_err.txt
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test results & reports
+playwright-report/
+test-results/
+.last-run.json
+
+# Vite cache
+.vite/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Environment & Local overrides
+.env
+.env.local
+.env.*.local
+*.local
