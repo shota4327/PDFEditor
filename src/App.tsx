@@ -1,10 +1,10 @@
-import { Loader2 } from 'lucide-react';
 import Header from './components/Header';
 import DropZone from './components/DropZone';
 import Toolbar from './components/Toolbar';
 import ThumbnailGrid from './components/ThumbnailGrid';
 import Toast from './components/Toast';
 import DragOverlay from './components/DragOverlay';
+import LoadingOverlay from './components/LoadingOverlay';
 import DropZoneErrorBanner from './components/DropZoneErrorBanner';
 import { usePdfPages } from './hooks/usePdfPages';
 import { useGlobalDragDrop } from './hooks/useGlobalDragDrop';
@@ -53,6 +53,9 @@ export default function App() {
       {/* 全画面ドラッグオーバーレイ */}
       <DragOverlay isDragging={isDraggingOver} />
 
+      {/* 全画面ローディングオーバーレイ */}
+      <LoadingOverlay isLoading={isLoading} />
+
       <main className="flex-1 w-full px-4 sm:px-6 py-4 space-y-4">
         {/* エラーメッセージバナー（ページ読み込み後など） */}
         {errorMessage && (
@@ -62,16 +65,8 @@ export default function App() {
           />
         )}
 
-        {/* 読み込み・処理中インジケータ */}
-        {isLoading && (
-          <div className="p-8 text-center flex flex-col items-center justify-center space-y-2 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-            <p className="text-sm font-medium text-slate-600">PDFドキュメントを処理中 & サムネイルを生成中...</p>
-          </div>
-        )}
-
         {/* 初期未読み込み時: 中央ドロップゾーンのみ表示 */}
-        {pages.length === 0 && !isLoading && (
+        {pages.length === 0 && (
           <div className="max-w-3xl mx-auto py-8">
             <DropZone
               onFilesSelected={handleFilesSelected}

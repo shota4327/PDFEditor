@@ -82,6 +82,7 @@ PDFEditor/
 │   ├── components/
 │   │   ├── Header.tsx        # アプリケーションヘッダー（ファイル選択ボタン内蔵）
 │   │   ├── DragOverlay.tsx   # 全画面ドラッグオーバーレイ
+│   │   ├── LoadingOverlay.tsx # 全画面ローディングオーバーレイ
 │   │   ├── DropZone.tsx      # ファイルドロップゾーン
 │   │   ├── DropZoneErrorBanner.tsx # エラー表示バナー
 │   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（DND対応）

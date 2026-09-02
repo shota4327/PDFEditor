@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Header from '../../src/components/Header';
 import DragOverlay from '../../src/components/DragOverlay';
+import LoadingOverlay from '../../src/components/LoadingOverlay';
 import DropZone from '../../src/components/DropZone';
 import ThumbnailCard from '../../src/components/ThumbnailCard';
 import ThumbnailGrid from '../../src/components/ThumbnailGrid';
@@ -39,6 +40,24 @@ describe('UI Components', () => {
 
     it('does not render when isDragging is false', () => {
       const { container } = render(<DragOverlay isDragging={false} />);
+      expect(container.firstChild).toBeNull();
+    });
+  });
+
+  describe('LoadingOverlay', () => {
+    it('renders overlay when isLoading is true', () => {
+      render(<LoadingOverlay isLoading={true} />);
+      expect(screen.getByTestId('loading-overlay')).toBeInTheDocument();
+      expect(screen.getByText(/PDFドキュメントを処理中 & サムネイルを生成中.../i)).toBeInTheDocument();
+    });
+
+    it('renders custom message when provided', () => {
+      render(<LoadingOverlay isLoading={true} message="カスタム処理中..." />);
+      expect(screen.getByText('カスタム処理中...')).toBeInTheDocument();
+    });
+
+    it('does not render when isLoading is false', () => {
+      const { container } = render(<LoadingOverlay isLoading={false} />);
       expect(container.firstChild).toBeNull();
     });
   });

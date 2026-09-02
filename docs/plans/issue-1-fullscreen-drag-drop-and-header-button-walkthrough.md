@@ -1,6 +1,6 @@
 # Issue #1 実装完了・検証報告 (Walkthrough)
 
-Issue #1（ドラッグ＆ドロップ可能エリアを画面全体に / タイトルバー内ファイル読み込みボタン / 起動直後・読み込み後表示切り替え / 編集エリアの画面全幅拡大）の実装と検証がすべて完了しました。
+Issue #1（ドラッグ＆ドロップ可能エリアを画面全体に / タイトルバー内ファイル読み込みボタン / 起動直後・読み込み後表示切り替え / 編集エリアの画面全幅拡大 / 読み込み中インライン表示の廃止と全画面ローディングオーバーレイ化）の実装と検証がすべて完了しました。
 
 ---
 
@@ -15,26 +15,31 @@ Issue #1（ドラッグ＆ドロップ可能エリアを画面全体に / タイ
 
 ### 3. 初期画面と読み込み後の表示切り替え & 画面全幅化
 - [`App.tsx`](file:///c:/Git/PDFEditor/src/App.tsx):
-  - 起動直後（0ページかつ非処理中）は中央にドロップゾーンのみを表示。
+  - 起動直後（0ページ）は中央にドロップゾーンのみを表示。
   - PDF読み込み後は初期ドロップゾーンを自動非表示とし、ツールバーとサムネイルグリッドを画面幅いっぱい（`w-full px-4 sm:px-6`）に展開。
   - `useGlobalDragDrop` と `DragOverlay` を統合し、全画面でのドラッグ＆ドロップに対応。
 
-### 4. ドキュメント & テスト基盤の同期更新
-- [`PROJECT.md`](file:///c:/Git/PDFEditor/docs/PROJECT.md): マイルストーン M10 およびファイル構成の更新を反映。
+### 4. 読み込み中表示の改善（インライン廃止・全画面ローディングオーバーレイ化）
+- [`LoadingOverlay.tsx`](file:///c:/Git/PDFEditor/src/components/LoadingOverlay.tsx): ファイル処理中（`isLoading`）に画面全体を覆う半透明オーバーレイ（スピナー＋メッセージ）を新設。
+- ページ数が少ない際のインラインローディング挿入・削除によるUIのガタつきを完全に防止し、DOMの安定性と視覚的滑らかさを向上。
+- [`DropZone.tsx`](file:///c:/Git/PDFEditor/src/components/DropZone.tsx): 内部のローディング分岐を整理し、表示をシンプル化。
+
+### 5. ドキュメント & テスト基盤の同期更新
+- [`PROJECT.md`](file:///c:/Git/PDFEditor/docs/PROJECT.md): マイルストーン M10 およびファイル構成（`LoadingOverlay.tsx` 等）の更新を反映。
 - [`TEST_INFRA.md`](file:///c:/Git/PDFEditor/docs/TEST_INFRA.md): Tier 5（ヘッダー操作 & 全画面 D&D）および T2.1 の仕様更新を反映。
 - [`useGlobalDragDrop.test.ts`](file:///c:/Git/PDFEditor/tests/unit/useGlobalDragDrop.test.ts): 全画面D&Dフックの単体テストを新設。
-- [`components.test.tsx`](file:///c:/Git/PDFEditor/tests/unit/components.test.tsx): Header、DragOverlay の単体テストを追加。
-- [`pdfEditor.spec.ts`](file:///c:/Git/PDFEditor/tests/e2e/pdfEditor.spec.ts): Tier 5 の E2E テスト（ヘッダーからのファイル読み込み、全画面ドラッグオーバーレイ表示）を追加。
+- [`components.test.tsx`](file:///c:/Git/PDFEditor/tests/unit/components.test.tsx): Header、DragOverlay、LoadingOverlay の単体テストを追加。
+- [`pdfEditor.spec.ts`](file:///c:/Git/PDFEditor/tests/e2e/pdfEditor.spec.ts): Tier 5 の E2E テストを追加。
 
 ---
 
 ## 検証結果
 
 ### 1. 単体テスト (Vitest)
-全 8 テストファイル・50 テストケースがすべて 100% 合格（PASS）。
+全 8 テストファイル・53 テストケースがすべて 100% 合格（PASS）。
 ```bash
  ✓ tests/unit/useGlobalDragDrop.test.ts (5 tests)
- ✓ tests/unit/components.test.tsx (15 tests)
+ ✓ tests/unit/components.test.tsx (18 tests)
  ✓ tests/unit/pdfEngine.test.ts (10 tests)
  ✓ tests/unit/usePdfPages.test.ts (7 tests)
  ✓ tests/unit/useToast.test.ts (4 tests)
@@ -43,7 +48,7 @@ Issue #1（ドラッグ＆ドロップ可能エリアを画面全体に / タイ
  ✓ tests/unit/generateFixtures.test.ts (1 test)
 
  Test Files  8 passed (8)
-      Tests  50 passed (50)
+      Tests  53 passed (53)
 ```
 
 ### 2. E2E テスト (Playwright)
@@ -52,12 +57,12 @@ Issue #1（ドラッグ＆ドロップ可能エリアを画面全体に / タイ
   ok 13 [chromium] › T5.1: Header open file button loads PDF pages and hides initial dropzone (1.3s)
   ok 15 [chromium] › T5.2: Global drag overlay triggers on dragenter and disappears on drop (458ms)
   ...
-  17 passed (13.2s)
+  17 passed (13.3s)
 ```
 
 ### 3. プロダクションビルド & バンドル検証
 TypeScript 型チェック（`tsc`）および Vite による完全オフライン単一 HTML バンドル出力（`dist/index.html`）が正常に完了。
 ```bash
-dist/index.html  2,616.50 kB
-✓ built in 3.12s
+dist/index.html  2,616.46 kB
+✓ built in 3.11s
 ```
