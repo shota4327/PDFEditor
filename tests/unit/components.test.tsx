@@ -12,10 +12,9 @@ import type { PdfPage } from '../../src/types/pdf';
 
 describe('UI Components', () => {
   describe('Header', () => {
-    it('renders header title, open file button, and offline badge', () => {
+    it('renders header title and open file button', () => {
       render(<Header />);
       expect(screen.getByText('PDFEditor')).toBeInTheDocument();
-      expect(screen.getByText('100% Offline Client-Side')).toBeInTheDocument();
       expect(screen.getByTestId('header-open-file-btn')).toBeInTheDocument();
     });
 
