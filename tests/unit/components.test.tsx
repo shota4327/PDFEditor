@@ -270,5 +270,54 @@ describe('UI Components', () => {
       expect(container.firstChild).toBeNull();
     });
   });
+
+  describe('DropZoneErrorBanner', () => {
+    it('renders error message and handles dismiss button', async () => {
+      const { DropZoneErrorBanner } = await import('../../src/components/DropZoneErrorBanner');
+      const handleDismiss = vi.fn();
+      render(<DropZoneErrorBanner errorMessage="エラーが発生しました" onErrorDismiss={handleDismiss} />);
+
+      expect(screen.getByText('エラーが発生しました')).toBeInTheDocument();
+      const dismissBtn = screen.getByRole('button', { name: /Dismiss/i });
+      fireEvent.click(dismissBtn);
+      expect(handleDismiss).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('PageCountBadge', () => {
+    it('renders page count text properly', async () => {
+      const { PageCountBadge } = await import('../../src/components/PageCountBadge');
+      render(<PageCountBadge pageCount={10} />);
+
+      expect(screen.getByTestId('page-count-badge')).toBeInTheDocument();
+      expect(screen.getByTestId('page-count')).toHaveTextContent('10');
+    });
+  });
+
+  describe('ZoomControls', () => {
+    it('renders zoom buttons and handles zoom click actions', async () => {
+      const { ZoomControls } = await import('../../src/components/ZoomControls');
+      const handleZoomIn = vi.fn();
+      const handleZoomOut = vi.fn();
+      const handleZoomReset = vi.fn();
+
+      render(
+        <ZoomControls
+          zoomLevel={125}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+        />
+      );
+
+      expect(screen.getByTestId('zoom-level-indicator')).toHaveTextContent('125%');
+      fireEvent.click(screen.getByTestId('zoom-in-btn'));
+      expect(handleZoomIn).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByTestId('zoom-out-btn'));
+      expect(handleZoomOut).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByTestId('zoom-reset-btn'));
+      expect(handleZoomReset).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
