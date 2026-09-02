@@ -230,14 +230,14 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
   // Tier 2: Boundary & Corner Cases
   // =========================================================================
   test.describe('Tier 2: Boundary & Corner Cases', () => {
-    test('T2.1: Empty upload state shows placeholder notice and hides export toolbar', async ({ page }) => {
+    test('T2.1: Empty upload state shows dropzone and hides export toolbar', async ({ page }) => {
       const cards = page.locator('[data-testid="thumbnail-card"]');
       await expect(cards).toHaveCount(0);
 
       const exportBtn = page.locator('[data-testid="export-btn"]');
       await expect(exportBtn).toHaveCount(0); // Hidden when 0 pages
 
-      await expect(page.getByText('まだページが読み込まれていません')).toBeVisible();
+      await expect(page.locator('[data-testid="dropzone"]')).toBeVisible();
     });
 
     test('T2.2: Single-page PDF processing and export', async ({ page }) => {
@@ -443,6 +443,49 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
 
       // Restore network for subsequent cleanups
       await context.setOffline(false);
+    });
+  });
+
+  // =========================================================================
+  // Tier 5: Header Controls & Full-Window Drag-and-Drop (Issue #1)
+  // =========================================================================
+  test.describe('Tier 5: Header Controls & Full-Window Drag-and-Drop', () => {
+    test('T5.1: Header open file button loads PDF pages and hides initial dropzone', async ({ page }) => {
+      // Initially, DropZone is visible and Toolbar is not rendered
+      await expect(page.locator('[data-testid="dropzone"]')).toBeVisible();
+      await expect(page.locator('[data-testid="toolbar"]')).toHaveCount(0);
+
+      // Upload files via Header input
+      const headerFileInput = page.locator('input[data-testid="header-file-input"]');
+      await headerFileInput.setInputFiles([SAMPLE_2PAGES]);
+
+      // Cards and Toolbar should be displayed
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(2, { timeout: 10000 });
+      await expect(page.locator('[data-testid="toolbar"]')).toBeVisible();
+
+      // DropZone should be hidden after loading files
+      await expect(page.locator('[data-testid="dropzone"]')).toHaveCount(0);
+    });
+
+    test('T5.2: Global drag overlay triggers on dragenter and disappears on drop', async ({ page }) => {
+      // Dispatch dragenter on window to show overlay
+      await page.evaluate(() => {
+        const event = new Event('dragenter', { bubbles: true, cancelable: true }) as any;
+        event.dataTransfer = { types: ['Files'] };
+        window.dispatchEvent(event);
+      });
+
+      const overlay = page.locator('[data-testid="global-drag-overlay"]');
+      await expect(overlay).toBeVisible();
+
+      // Dispatch dragleave to remove overlay
+      await page.evaluate(() => {
+        const event = new Event('dragleave', { bubbles: true, cancelable: true }) as any;
+        window.dispatchEvent(event);
+      });
+
+      await expect(overlay).toHaveCount(0);
     });
   });
 });

@@ -146,28 +146,19 @@ export const DropZone: React.FC<DropZoneProps> = ({
           onChange={handleFileChange}
         />
 
-        {isProcessing ? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-            <p className="text-sm font-medium text-slate-700">
-              PDFファイルを処理中...
+        <div className="flex flex-col items-center gap-4 pointer-events-none py-3">
+          <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
+            <UploadCloud className="w-8 h-8" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-slate-800">
+              PDFファイルをドラッグ＆ドロップ
+            </p>
+            <p className="text-sm text-slate-500 mt-1">
+              またはクリックしてファイルを選択（複数選択可）
             </p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-4 pointer-events-none py-3">
-            <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
-              <UploadCloud className="w-8 h-8" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-slate-800">
-                PDFファイルをドラッグ＆ドロップ
-              </p>
-              <p className="text-sm text-slate-500 mt-1">
-                またはクリックしてファイルを選択（複数選択可）
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

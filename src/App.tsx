@@ -1,10 +1,13 @@
-import { Loader2 } from 'lucide-react';
 import Header from './components/Header';
 import DropZone from './components/DropZone';
 import Toolbar from './components/Toolbar';
 import ThumbnailGrid from './components/ThumbnailGrid';
 import Toast from './components/Toast';
+import DragOverlay from './components/DragOverlay';
+import LoadingOverlay from './components/LoadingOverlay';
+import DropZoneErrorBanner from './components/DropZoneErrorBanner';
 import { usePdfPages } from './hooks/usePdfPages';
+import { useGlobalDragDrop } from './hooks/useGlobalDragDrop';
 
 /**
  * PDFEditor メインアプリケーションコンポーネント
@@ -35,29 +38,47 @@ export default function App() {
     handleExport,
   } = usePdfPages();
 
+  const { isDraggingOver } = useGlobalDragDrop({
+    onFilesDropped: handleFilesSelected,
+    disabled: isLoading,
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      <Header />
+      <Header
+        onFilesSelected={handleFilesSelected}
+        isProcessing={isLoading}
+      />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        {/* PDF アップロード用ドロップゾーン */}
-        <DropZone
-          onFilesSelected={handleFilesSelected}
-          onFilesAdded={handleFilesSelected}
-          errorMessage={errorMessage}
-          onErrorDismiss={() => setErrorMessage(null)}
-          isProcessing={isLoading}
-        />
+      {/* 全画面ドラッグオーバーレイ */}
+      <DragOverlay isDragging={isDraggingOver} />
 
-        {/* 読み込み・処理中インジケータ */}
-        {isLoading && (
-          <div className="p-8 text-center flex flex-col items-center justify-center space-y-2 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-            <p className="text-sm font-medium text-slate-600">PDFドキュメントを処理中 & サムネイルを生成中...</p>
+      {/* 全画面ローディングオーバーレイ */}
+      <LoadingOverlay isLoading={isLoading} />
+
+      <main className="flex-1 w-full px-4 sm:px-6 py-4 space-y-4">
+        {/* エラーメッセージバナー（ページ読み込み後など） */}
+        {errorMessage && (
+          <DropZoneErrorBanner
+            errorMessage={errorMessage}
+            onErrorDismiss={() => setErrorMessage(null)}
+          />
+        )}
+
+        {/* 初期未読み込み時: 中央ドロップゾーンのみ表示 */}
+        {pages.length === 0 && (
+          <div className="max-w-3xl mx-auto py-8">
+            <DropZone
+              onFilesSelected={handleFilesSelected}
+              onFilesAdded={handleFilesSelected}
+              errorMessage={null}
+              onErrorDismiss={() => setErrorMessage(null)}
+              isProcessing={isLoading}
+            />
           </div>
         )}
 
-        {/* ページ一覧 & 操作ツールバー */}
+        {/* ページ一覧 & 操作ツールバー（ファイル読み込み後） */}
         {pages.length > 0 && (
           <div className="space-y-4">
             <Toolbar
@@ -85,16 +106,6 @@ export default function App() {
               onRotateCCW={handleRotateCCW}
               onDelete={handleDelete}
             />
-          </div>
-        )}
-
-        {/* 初期未読み込み時プレースホルダー */}
-        {pages.length === 0 && !isLoading && (
-          <div className="text-center py-12 px-4 space-y-2 border border-slate-200/60 rounded-xl bg-white/50">
-            <p className="text-sm font-semibold text-slate-700">まだページが読み込まれていません</p>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
-              上のエリアにPDFファイルをドラッグ＆ドロップすると、ページの並び替え、回転、削除、および結合編集が可能です。
-            </p>
           </div>
         )}
       </main>
