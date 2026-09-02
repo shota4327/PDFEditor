@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       data-testid="header"
-      className="bg-slate-900 border-b border-slate-800 text-white px-4 sm:px-6 py-2.5 flex items-center justify-between shadow-md"
+      className="bg-slate-900 border-b border-slate-800 text-white px-4 sm:px-6 py-1.5 flex items-center justify-between shadow-md"
     >
       <input
         ref={fileInputRef}
@@ -69,10 +69,10 @@ export const Header: React.FC<HeaderProps> = ({
           data-testid="header-open-file-btn"
           onClick={handleClickOpen}
           disabled={isProcessing}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs sm:text-sm font-semibold rounded-lg shadow transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs sm:text-sm font-semibold rounded-lg shadow transition-colors cursor-pointer"
           title="PDFファイルを開く / 追加"
         >
-          <FolderOpen className="w-4 h-4" />
+          <FolderOpen className="w-3.5 h-3.5" />
           <span>ファイルを開く</span>
         </button>
       </div>

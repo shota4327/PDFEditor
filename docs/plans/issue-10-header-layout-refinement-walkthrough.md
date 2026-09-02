@@ -1,6 +1,6 @@
 # Issue #10 実装完了・検証報告 (Walkthrough)
 
-Issue #10（タイトル横アイコンの廃止 / タイトル文字の一回り拡大 / 右端オフライン保証バッジの削除）の実装と検証がすべて完了しました。
+Issue #10（タイトル横アイコンの廃止 / タイトル文字の一回り拡大 / 右端オフライン保証バッジの削除 / タイトルバー上下幅のコンパクト化）の実装と検証がすべて完了しました。
 
 ---
 
@@ -8,6 +8,7 @@ Issue #10（タイトル横アイコンの廃止 / タイトル文字の一回�
 
 ### 1. ヘッダーレイアウトの微調整
 - [`Header.tsx`](file:///c:/Git/PDFEditor/src/components/Header.tsx):
+  - タイトルバー全体の上下パディングを縮小（`py-2.5` → `py-1.5`）し、ヘッダーをコンパクト化。
   - タイトル左側のグラデーションアイコンコンテナを削除。
   - タイトル（`PDFEditor`）のフォントサイズを拡大（`text-lg sm:text-xl font-bold tracking-tight text-white`）。
   - サブテキスト（「オフライン完結型PDF編集ツール」）はタイトルの横に併記維持。
@@ -17,6 +18,7 @@ Issue #10（タイトル横アイコンの廃止 / タイトル文字の一回�
 ### 2. テスト & ドキュメントの同期更新
 - [`components.test.tsx`](file:///c:/Git/PDFEditor/tests/unit/components.test.tsx): Header 単体テストのアサーションから削除されたオフラインバッジの検証を整理し、タイトルとファイル選択ボタンの検証を更新。
 - [`PROJECT.md`](file:///c:/Git/PDFEditor/docs/PROJECT.md): マイルストーン M11 を追加。
+- [`GEMINI.md`](file:///c:/Git/PDFEditor/GEMINI.md): バックグラウンドコマンド実行時の `schedule` タイマー呼び出し禁止・Reactive Wakeup 待機ルールを厳格化。
 
 ---
 
@@ -41,15 +43,15 @@ Issue #10（タイトル横アイコンの廃止 / タイトル文字の一回�
 ### 2. E2E テスト (Playwright)
 全 17 テストケース（Tier 1〜5、オフライン監査含む）がすべて 100% 合格（PASS）。
 ```bash
-  ok 12 [chromium] › T5.1: Header open file button loads PDF pages and hides initial dropzone (1.2s)
-  ok 14 [chromium] › T5.2: Global drag overlay triggers on dragenter and disappears on drop (334ms)
+  ok 13 [chromium] › T5.1: Header open file button loads PDF pages and hides initial dropzone (1.2s)
+  ok 15 [chromium] › T5.2: Global drag overlay triggers on dragenter and disappears on drop (360ms)
   ...
-  17 passed (13.5s)
+  17 passed (13.4s)
 ```
 
 ### 3. プロダクションビルド & バンドル検証
 TypeScript 型チェック（`tsc`）および Vite による完全オフライン単一 HTML バンドル出力（`dist/index.html`）が正常に完了。
 ```bash
-dist/index.html  2,614.56 kB
-✓ built in 3.02s
+dist/index.html  2,614.51 kB
+✓ built in 3.10s
 ```
