@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Header from '../../src/components/Header';
+import DragOverlay from '../../src/components/DragOverlay';
 import DropZone from '../../src/components/DropZone';
 import ThumbnailCard from '../../src/components/ThumbnailCard';
 import ThumbnailGrid from '../../src/components/ThumbnailGrid';
@@ -10,10 +11,35 @@ import type { PdfPage } from '../../src/types/pdf';
 
 describe('UI Components', () => {
   describe('Header', () => {
-    it('renders header title and offline badge', () => {
+    it('renders header title, open file button, and offline badge', () => {
       render(<Header />);
       expect(screen.getByText('PDFEditor')).toBeInTheDocument();
       expect(screen.getByText('100% Offline Client-Side')).toBeInTheDocument();
+      expect(screen.getByTestId('header-open-file-btn')).toBeInTheDocument();
+    });
+
+    it('triggers file selection callback when file input changes', () => {
+      const handleFilesSelected = vi.fn();
+      render(<Header onFilesSelected={handleFilesSelected} />);
+
+      const fileInput = screen.getByTestId('header-file-input');
+      const dummyFile = new File(['dummy content'], 'sample.pdf', { type: 'application/pdf' });
+
+      fireEvent.change(fileInput, { target: { files: [dummyFile] } });
+      expect(handleFilesSelected).toHaveBeenCalledWith([dummyFile]);
+    });
+  });
+
+  describe('DragOverlay', () => {
+    it('renders overlay when isDragging is true', () => {
+      render(<DragOverlay isDragging={true} />);
+      expect(screen.getByTestId('global-drag-overlay')).toBeInTheDocument();
+      expect(screen.getByText(/ここにPDFファイルをドロップ/i)).toBeInTheDocument();
+    });
+
+    it('does not render when isDragging is false', () => {
+      const { container } = render(<DragOverlay isDragging={false} />);
+      expect(container.firstChild).toBeNull();
     });
   });
 

@@ -24,6 +24,7 @@
 | M7 | ズーム機能 & UI/UX 強化 | プレビューサムネイルの拡大縮小（50%〜300%）、グリッド重なりバグ修正、単一 HTML バンドル最適化 | M3, M4 | 完了 (DONE) |
 | M8 | TypeScript 7 移行 & 高速化 | TypeScript 7.0 への更新、tsconfig 互換性調整、型チェック/ビルド/テストの検証 | M1 | 完了 (DONE) |
 | M9 | 全体リファクタリング & 品質改善 | GEMINI.md 原則に基づくコンポーネント・フック分割（30〜50行）、page.cleanup 徹底、単体テスト拡充 | M1〜M8 | 完了 (DONE) |
+| M10 | 全画面D&D & ヘッダー操作 (Issue #1) | 全画面ドラッグ＆ドロップ（オーバーレイ表示）、ヘッダー内ファイル読み込みボタン、読み込み後ドロップゾーン非表示、画面全幅編集エリア | M1〜M9 | 完了 (DONE) |
 
 ---
 
@@ -76,9 +77,11 @@ PDFEditor/
 │   ├── hooks/
 │   │   ├── usePdfPages.ts    # PDF ページ状態管理・結合操作
 │   │   ├── useZoom.ts        # サムネイルズーム制御フック
-│   │   └── useToast.ts       # トースト通知・自動消去フック
+│   │   ├── useToast.ts       # トースト通知・自動消去フック
+│   │   └── useGlobalDragDrop.ts # 全画面ドラッグ＆ドロップ監視フック
 │   ├── components/
-│   │   ├── Header.tsx        # アプリケーションヘッダー
+│   │   ├── Header.tsx        # アプリケーションヘッダー（ファイル選択ボタン内蔵）
+│   │   ├── DragOverlay.tsx   # 全画面ドラッグオーバーレイ
 │   │   ├── DropZone.tsx      # ファイルドロップゾーン
 │   │   ├── DropZoneErrorBanner.tsx # エラー表示バナー
 │   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（DND対応）
