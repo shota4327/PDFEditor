@@ -63,8 +63,7 @@ PDFEditor/
 ├── tsconfig.node.json        # ツール・設定ファイル向け TypeScript 設定
 ├── index.html                # HTML エントリーポイント
 ├── .gitignore                # Git 管理対象外設定
-├── .gemini/
-│   └── rules.md              # プロジェクト開発・コーディング原則
+├── GEMINI.md                 # プロジェクト開発・コーディング原則 (開発ルール)
 ├── src/
 │   ├── main.tsx              # React アプリケーション起動エントリー
 │   ├── App.tsx               # メインアプリケーションコンポーネント
@@ -90,7 +89,10 @@ PDFEditor/
 │       ├── fixtures/         # テスト用サンプル PDF ファイル
 │       ├── helpers/          # テスト補助モジュール（PDF検証等）
 │       └── pdfEditor.spec.ts # 4層 E2E 総合テスト
-├── PROJECT.md                # 本設計仕様書
-├── TEST_INFRA.md             # テスト設計・セレクタ仕様書
+├── docs/
+│   ├── PROJECT.md            # 本設計仕様書
+│   ├── TEST_INFRA.md         # テスト設計・セレクタ仕様書
+│   └── plans/                # 実装計画および検証記録
+├── GEMINI.md                 # プロジェクト開発・コーディング原則 (開発ルール)
 └── README.md                 # プロジェクト概要・利用手順
 ```

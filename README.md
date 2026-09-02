@@ -87,9 +87,10 @@ PDFEditor/
 ├── tests/
 │   ├── unit/            # Vitest 単体テスト
 │   └── e2e/             # Playwright E2E テスト
-├── .gemini/
-│   └── rules.md         # プロジェクト開発・コーディング原則
-├── PROJECT.md           # アーキテクチャ・モジュール設計書
-├── TEST_INFRA.md        # テスト設計・セレクタ仕様書
+├── docs/
+│   ├── PROJECT.md       # アーキテクチャ・モジュール設計書
+│   ├── TEST_INFRA.md    # テスト設計・セレクタ仕様書
+│   └── plans/           # 実装計画および検証記録
+├── GEMINI.md            # プロジェクト開発・コーディング原則 (開発ルール)
 └── README.md            # 本ドキュメント
 ```
