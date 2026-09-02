@@ -94,32 +94,36 @@ export async function renderPageThumbnail(
   try {
     const page = await pdfDoc.getPage(pageIndex + 1); // pdfjs は 1 始まり
 
-    const unscaledViewport = page.getViewport({ scale: 1.0 });
-    const targetWidth = 1200;
-    const computedScale = scale !== undefined ? scale : (targetWidth / (unscaledViewport.width || 1));
-    const viewport = page.getViewport({ scale: computedScale });
+    try {
+      const unscaledViewport = page.getViewport({ scale: 1.0 });
+      const targetWidth = 1200;
+      const computedScale = scale !== undefined ? scale : (targetWidth / (unscaledViewport.width || 1));
+      const viewport = page.getViewport({ scale: computedScale });
 
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
 
-    if (!context) {
-      throw new Error('Canvas 2D コンテキストが利用できません');
+      if (!context) {
+        throw new Error('Canvas 2D コンテキストが利用できません');
+      }
+
+      canvas.width = Math.max(1, Math.floor(viewport.width));
+      canvas.height = Math.max(1, Math.floor(viewport.height));
+
+      // Canvas を白色（用紙の背景色）で初期化
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+      };
+
+      await page.render(renderContext).promise;
+      return canvas.toDataURL('image/jpeg', 0.95);
+    } finally {
+      page.cleanup();
     }
-
-    canvas.width = Math.max(1, Math.floor(viewport.width));
-    canvas.height = Math.max(1, Math.floor(viewport.height));
-
-    // Canvas を白色（用紙の背景色）で初期化
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport,
-    };
-
-    await page.render(renderContext).promise;
-    return canvas.toDataURL('image/jpeg', 0.95);
   } finally {
     await pdfDoc.destroy();
   }
@@ -162,7 +166,8 @@ export async function exportPdf(pages: ExportPageSpec[]): Promise<Uint8Array> {
  * @param filename ダウンロードファイル名
  */
 export function createDownloadLink(pdfBytes: Uint8Array, filename: string): void {
-  const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+  const buffer = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+  const blob = new Blob([buffer], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

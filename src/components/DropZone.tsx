@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { UploadCloud, FilePlus, Loader2, FileWarning } from 'lucide-react';
+import { UploadCloud, FilePlus, Loader2 } from 'lucide-react';
+import DropZoneErrorBanner from './DropZoneErrorBanner';
 
 /**
  * ファイルドロップゾーンコンポーネントのプロパティ定義
@@ -117,23 +118,10 @@ export const DropZone: React.FC<DropZoneProps> = ({
   return (
     <div className="w-full space-y-4">
       {errorMessage && (
-        <div
-          data-testid="error-message"
-          className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center justify-between shadow-sm animate-fade-in"
-        >
-          <div className="flex items-center gap-2">
-            <FileWarning className="w-5 h-5 text-rose-600 flex-shrink-0" />
-            <span className="text-sm font-medium">{errorMessage}</span>
-          </div>
-          {onErrorDismiss && (
-            <button
-              onClick={onErrorDismiss}
-              className="text-xs px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 font-medium rounded transition"
-            >
-              Dismiss
-            </button>
-          )}
-        </div>
+        <DropZoneErrorBanner
+          errorMessage={errorMessage}
+          onErrorDismiss={onErrorDismiss}
+        />
       )}
 
       <div

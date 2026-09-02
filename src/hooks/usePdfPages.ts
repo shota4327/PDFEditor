@@ -1,60 +1,30 @@
 import { useState, useCallback } from 'react';
 import type { PdfPageInfo, ExportPageSpec } from '../types/pdf';
 import { loadPdfDocument, exportPdf, createDownloadLink } from '../services/pdfEngine';
+import { useZoom } from './useZoom';
+import { useToast, ToastMessage } from './useToast';
 
-export interface ToastMessage {
-  message: string;
-  type: 'success' | 'error' | 'info';
-}
+export type { ToastMessage };
 
 /**
  * PDF ページの読み込み・回転・並び替え・削除・ズーム・エクスポートの状態を管理するカスタムフック
  */
 export function usePdfPages() {
   const [pages, setPages] = useState<PdfPageInfo[]>([]);
-  const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  /**
-   * トースト通知を表示（一定時間後に自動消去）
-   */
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast((current) => (current?.message === message ? null : current));
-    }, 3500);
-  }, []);
+  const {
+    zoomLevel,
+    setZoomLevel,
+    handleZoomIn,
+    handleZoomOut,
+    handleZoomReset,
+    handleZoomChange,
+  } = useZoom(100);
 
-  /**
-   * ズーム倍率の拡大（最大200%）
-   */
-  const handleZoomIn = useCallback(() => {
-    setZoomLevel((prev) => Math.min(200, prev + 25));
-  }, []);
-
-  /**
-   * ズーム倍率の縮小（最小50%）
-   */
-  const handleZoomOut = useCallback(() => {
-    setZoomLevel((prev) => Math.max(50, prev - 25));
-  }, []);
-
-  /**
-   * ズーム倍率を標準（100%）にリセット
-   */
-  const handleZoomReset = useCallback(() => {
-    setZoomLevel(100);
-  }, []);
-
-  /**
-   * ズーム倍率の直接指定
-   */
-  const handleZoomChange = useCallback((newZoom: number) => {
-    setZoomLevel(Math.min(200, Math.max(50, newZoom)));
-  }, []);
+  const { toast, setToast, showToast } = useToast();
 
   /**
    * 複数 PDF ファイルの選択・ドロップ読み込み
@@ -203,6 +173,7 @@ export function usePdfPages() {
     pages,
     setPages,
     zoomLevel,
+    setZoomLevel,
     isLoading,
     isExporting,
     errorMessage,

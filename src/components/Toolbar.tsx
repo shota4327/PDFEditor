@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
-import { Download, Trash2, Loader2, ZoomIn, ZoomOut, RotateCcw, RotateCw, FileText } from 'lucide-react';
+import { Download, Trash2, Loader2, RotateCcw, RotateCw } from 'lucide-react';
+import PageCountBadge from './PageCountBadge';
+import ZoomControls from './ZoomControls';
 
 /**
  * ツールバーコンポーネントのプロパティ定義
@@ -82,20 +84,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
       {/* 左側コントロール: ページ数バッジ、一括左回転、一括右回転、ズーム制御 */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* ページ数表示バッジ */}
-        <div
-          data-testid="page-count-badge"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/80 border border-indigo-100 text-indigo-900 rounded-lg text-xs font-semibold"
-          title={`現在の総ページ数: ${pageCount}`}
-        >
-          <FileText className="w-3.5 h-3.5 text-indigo-600" />
-          <span>ページ数:</span>
-          <span data-testid="page-count" className="font-bold text-indigo-600 font-mono text-sm">
-            {pageCount}
-          </span>
-        </div>
+        <PageCountBadge pageCount={pageCount} />
 
-        {/* 一括反時計回り回転 */}
         <button
           type="button"
           data-testid="rotate-all-ccw-btn"
@@ -108,7 +98,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <span>すべて左回転</span>
         </button>
 
-        {/* 一括時計回り回転 */}
         <button
           type="button"
           data-testid="rotate-all-cw-btn"
@@ -121,58 +110,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <span>すべて右回転</span>
         </button>
 
-        {/* ズーム倍率コントロール */}
-        <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200" data-testid="zoom-controls">
-          <button
-            type="button"
-            data-testid="zoom-out-btn"
-            onClick={onZoomOut}
-            disabled={zoomLevel <= 50 || isProcessing}
-            className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-white rounded disabled:opacity-40 transition-colors cursor-pointer"
-            title="Zoom Out (-25%)"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-
-          <input
-            type="range"
-            data-testid="zoom-slider"
-            min={50}
-            max={200}
-            step={5}
-            value={zoomLevel}
-            disabled={isProcessing}
-            onChange={(e) => onZoomChange && onZoomChange(Number(e.target.value))}
-            className="w-24 sm:w-28 h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
-            title={`Zoom: ${zoomLevel}%`}
-          />
-
-          <span data-testid="zoom-level-indicator" className="text-xs font-mono font-bold text-slate-700 w-12 text-center select-none">
-            {zoomLevel}%
-          </span>
-
-          <button
-            type="button"
-            data-testid="zoom-in-btn"
-            onClick={onZoomIn}
-            disabled={zoomLevel >= 200 || isProcessing}
-            className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-white rounded disabled:opacity-40 transition-colors cursor-pointer"
-            title="Zoom In (+25%)"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            data-testid="zoom-reset-btn"
-            onClick={onZoomReset}
-            disabled={zoomLevel === 100 || isProcessing}
-            className="px-2 py-1 text-[11px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-white rounded disabled:opacity-40 transition-colors border-l border-slate-200/80 ml-0.5 cursor-pointer"
-            title="Reset Zoom to 100%"
-          >
-            Reset
-          </button>
-        </div>
+        <ZoomControls
+          zoomLevel={zoomLevel}
+          onZoomIn={onZoomIn}
+          onZoomOut={onZoomOut}
+          onZoomReset={onZoomReset}
+          onZoomChange={onZoomChange}
+          disabled={isProcessing}
+        />
       </div>
 
       {/* 右側アクション: 全クリア、PDFエクスポート */}

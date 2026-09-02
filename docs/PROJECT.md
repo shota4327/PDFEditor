@@ -23,6 +23,7 @@
 | M6 | E2E 検証 & 整合性監査 | E2E テストの実行、ストレステスト、データ漏洩・完全オフライン監査 | M4, M5 | 完了 (DONE) |
 | M7 | ズーム機能 & UI/UX 強化 | プレビューサムネイルの拡大縮小（50%〜300%）、グリッド重なりバグ修正、単一 HTML バンドル最適化 | M3, M4 | 完了 (DONE) |
 | M8 | TypeScript 7 移行 & 高速化 | TypeScript 7.0 への更新、tsconfig 互換性調整、型チェック/ビルド/テストの検証 | M1 | 完了 (DONE) |
+| M9 | 全体リファクタリング & 品質改善 | GEMINI.md 原則に基づくコンポーネント・フック分割（30〜50行）、page.cleanup 徹底、単体テスト拡充 | M1〜M8 | 完了 (DONE) |
 
 ---
 
@@ -72,12 +73,23 @@ PDFEditor/
 │   │   └── pdf.ts            # PDF 関連の型定義インターフェース
 │   ├── services/
 │   │   └── pdfEngine.ts      # PDF 処理・レンダリングサービス
+│   ├── hooks/
+│   │   ├── usePdfPages.ts    # PDF ページ状態管理・結合操作
+│   │   ├── useZoom.ts        # サムネイルズーム制御フック
+│   │   └── useToast.ts       # トースト通知・自動消去フック
 │   ├── components/
 │   │   ├── Header.tsx        # アプリケーションヘッダー
 │   │   ├── DropZone.tsx      # ファイルドロップゾーン
+│   │   ├── DropZoneErrorBanner.tsx # エラー表示バナー
 │   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（DND対応）
-│   │   ├── ThumbnailCard.tsx # 各ページサムネイルカード
-│   │   └── Toolbar.tsx       # 操作ツールバー（ズーム、削除、出力）
+│   │   ├── ThumbnailCard.tsx # 各ページサムネイルカードコンテナ
+│   │   ├── ThumbnailCardHeader.tsx # カードヘッダー（ドラッグ・削除）
+│   │   ├── ThumbnailPreview.tsx    # サムネイル画像・回転プレビュー
+│   │   ├── ThumbnailCardFooter.tsx # カードフッター（個別回転ボタン）
+│   │   ├── Toolbar.tsx       # 操作ツールバー（ズーム、削除、出力）
+│   │   ├── PageCountBadge.tsx # 総ページ数バッジ
+│   │   ├── ZoomControls.tsx  # ズーム操作コントロール
+│   │   └── Toast.tsx         # 操作通知トースト
 │   └── index.css             # グローバルスタイル
 ├── tests/
 │   ├── unit/                 # Vitest 単体テストスイート
@@ -85,6 +97,8 @@ PDFEditor/
 │   │   ├── pdfEngine.test.ts # エンジン単体テスト
 │   │   ├── pdfHelpers.test.ts# ヘルパー単体テスト
 │   │   ├── components.test.tsx # UI コンポーネント単体テスト
+│   │   ├── useZoom.test.ts   # ズームフック単体テスト
+│   │   ├── useToast.test.ts  # トーストフック単体テスト
 │   │   └── generateFixtures.test.ts # テスト用 PDF 生成テスト
 │   └── e2e/                  # Playwright E2E テストスイート
 │       ├── fixtures/         # テスト用サンプル PDF ファイル
