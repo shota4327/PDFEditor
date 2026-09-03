@@ -11,6 +11,7 @@ const FIXTURES_DIR = path.resolve(__dirname, './fixtures');
 const SAMPLE_1PAGE = path.join(FIXTURES_DIR, 'sample-1page.pdf');
 const SAMPLE_2PAGES = path.join(FIXTURES_DIR, 'sample-2pages.pdf');
 const SAMPLE_3PAGES = path.join(FIXTURES_DIR, 'sample-3pages.pdf');
+const SAMPLE_JBIG2 = path.join(FIXTURES_DIR, 'sample-jbig2-scanned.pdf');
 const INVALID_FILE = path.join(FIXTURES_DIR, 'invalid-file.txt');
 
 test.beforeAll(async () => {
@@ -319,6 +320,23 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       const cards = page.locator('[data-testid="thumbnail-card"]');
       await expect(cards).toHaveCount(0);
     });
+
+    test('T2.6: Scanned document with JBIG2 compression renders non-blank thumbnail', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_JBIG2]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(1, { timeout: 15000 });
+
+      const thumbnailImg = cards.first().locator('img[data-testid="thumbnail-img"]');
+      await expect(thumbnailImg).toBeVisible({ timeout: 15000 });
+
+      const src = await thumbnailImg.getAttribute('src');
+      expect(src).toBeTruthy();
+      expect(src).toMatch(/^data:image\/jpeg/);
+      // Non-blank rendered image data URL is substantially larger than an empty white canvas
+      expect(src!.length).toBeGreaterThan(50000);
+    });
   });
 
   // =========================================================================
@@ -443,6 +461,39 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
 
       // Restore network for subsequent cleanups
       await context.setOffline(false);
+    });
+
+    test('T4.3: Standalone single-file dist/index.html loads and renders thumbnails offline via file://', async ({ browser }) => {
+      const distHtmlPath = path.resolve(__dirname, '../../dist/index.html');
+      const fileUrl = 'file:///' + distHtmlPath.replace(/\\/g, '/');
+      const context = await browser.newContext({ offline: true });
+      const page = await context.newPage();
+      await page.goto(fileUrl);
+
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_1PAGE]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(1, { timeout: 10000 });
+
+      const thumbnailImg = cards.first().locator('img[data-testid="thumbnail-img"]');
+      await expect(thumbnailImg).toBeVisible({ timeout: 10000 });
+      const src = await thumbnailImg.getAttribute('src');
+      expect(src).toBeTruthy();
+      expect(src).toMatch(/^data:image\//);
+
+      // Perform rotation and export download via file://
+      const rotateCwBtn = cards.first().locator('[data-testid="rotate-cw-btn"]');
+      await rotateCwBtn.click();
+      await expect(cards.first().locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator('[data-testid="export-btn"]').click();
+      const download = await downloadPromise;
+      const tempPath = await download.path();
+      expect(tempPath).toBeTruthy();
+
+      await context.close();
     });
   });
 

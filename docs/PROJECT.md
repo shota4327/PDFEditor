@@ -27,6 +27,7 @@
 | M10 | 全画面D&D & ヘッダー操作 (Issue #1) | 全画面ドラッグ＆ドロップ（オーバーレイ表示）、ヘッダー内ファイル読み込みボタン、読み込み後ドロップゾーン非表示、画面全幅編集エリア | M1〜M9 | 完了 (DONE) |
 | M11 | ヘッダーレイアウト微調整 (Issue #10) | タイトル横アイコンの廃止、タイトル文字の一回り拡大、右端オフライン保証バッジ削除 | M1〜M10 | 完了 (DONE) |
 | M12 | ビルド＆テスト基盤最新化 (Issue #12) | TypeScript 7.0.2, Testing Library 16.3.3, Playwright 1.62.1, Vitest 4.1.11, Vite 8.2.2 への更新と単一HTML高速ビルド（950ms）検証 | M1〜M11 | 完了 (DONE) |
+| M13 | pdfjs-dist メジャーアップデート (Issue #14) | `pdfjs-dist@6.3.289` への更新、CVE-2024-4367 脆弱性解消、eval 警告排除、ECMAScript ポリフィル（`polyfills.ts`）整備、JBIG2 インライン WASM デコーダ（`jbig2Wasm.ts` / `OfflineBinaryDataFactory`）によるスキャン文書完全対応、単一 HTML（`file://`）完全オフライン E2E 自動検証（T4.3）拡充 | M1〜M12 | 完了 (DONE) |
 
 ---
 
@@ -72,6 +73,9 @@ PDFEditor/
 ├── src/
 │   ├── main.tsx              # React アプリケーション起動エントリー
 │   ├── App.tsx               # メインアプリケーションコンポーネント
+│   ├── utils/
+│   │   ├── polyfills.ts      # pdfjs-dist v6 向け ECMAScript ポリフィル
+│   │   └── jbig2Wasm.ts      # JBIG2 インライン WASM デコーダおよび BinaryDataFactory
 │   ├── types/
 │   │   └── pdf.ts            # PDF 関連の型定義インターフェース
 │   ├── services/
