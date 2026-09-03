@@ -40,7 +40,6 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   onDelete,
   zoomLevel = 100,
 }) => {
-  const cardMinWidth = Math.round(200 * (zoomLevel / 100));
   const thumbnailHeight = Math.round(283 * (zoomLevel / 100));
 
   const handleDragEnd = (result: DropResult) => {
@@ -61,11 +60,7 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
             data-testid="thumbnail-grid"
             ref={provided.innerRef}
             {...provided.droppableProps}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(auto-fill, minmax(${cardMinWidth}px, 1fr))`,
-            }}
-            className={`gap-4 p-2 min-h-[200px] rounded-xl transition-colors ${
+            className={`flex flex-wrap gap-5 p-4 min-h-[200px] rounded-xl transition-colors items-start ${
               snapshot.isDraggingOver ? 'bg-indigo-50/40 border border-indigo-200' : ''
             }`}
           >

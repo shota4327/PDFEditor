@@ -138,8 +138,7 @@ describe('UI Components', () => {
       );
 
       const card = screen.getByTestId('thumbnail-card');
-      const imgContainer = card.querySelector('div[style*="height"]');
-      expect(imgContainer).toHaveStyle({ height: '240px' });
+      expect(card).toHaveStyle({ height: '240px' });
     });
   });
 
@@ -157,7 +156,7 @@ describe('UI Components', () => {
       },
     ];
 
-    it('renders grid with dynamic column minmax calculation based on zoomLevel', () => {
+    it('renders container with flex wrap layout for responsive tight fitting', () => {
       render(
         <ThumbnailGrid
           pages={samplePages}
@@ -168,10 +167,7 @@ describe('UI Components', () => {
       );
 
       const grid = screen.getByTestId('thumbnail-grid');
-      // Math.round(200 * (150 / 100)) = 300
-      expect(grid).toHaveStyle({
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-      });
+      expect(grid).toHaveClass('flex', 'flex-wrap');
     });
   });
 

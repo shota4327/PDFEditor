@@ -33,7 +33,7 @@ export const ThumbnailCardFooter: React.FC<ThumbnailCardFooterProps> = ({
   return (
     <div className="absolute bottom-2 left-2 right-2 z-20 flex items-center justify-between pointer-events-none select-none">
       {/* 回転コントロールピル（回転量 + CCW + CW） */}
-      <div className="pointer-events-auto flex items-center gap-1 bg-white/75 backdrop-blur-md px-2 py-1 rounded-md border border-white/60 shadow-sm text-slate-700">
+      <div className="pointer-events-auto flex items-center gap-1 bg-slate-300/70 backdrop-blur-md px-2 py-1 rounded-md border border-white/40 shadow-sm text-slate-800">
         <span
           data-testid="rotation-badge"
           className="font-mono text-[11px] font-semibold pr-1"
@@ -47,7 +47,7 @@ export const ThumbnailCardFooter: React.FC<ThumbnailCardFooterProps> = ({
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           aria-label="Rotate counter-clockwise"
-          className="p-1 rounded hover:bg-slate-100/80 hover:text-indigo-600 transition-colors cursor-pointer"
+          className="p-1 rounded hover:bg-slate-400/50 hover:text-indigo-700 transition-colors cursor-pointer text-slate-700"
           title="反時計回りに90度回転"
         >
           <RotateCcw className="w-3.5 h-3.5" />
@@ -59,7 +59,7 @@ export const ThumbnailCardFooter: React.FC<ThumbnailCardFooterProps> = ({
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           aria-label="Rotate clockwise"
-          className="p-1 rounded hover:bg-slate-100/80 hover:text-indigo-600 transition-colors cursor-pointer"
+          className="p-1 rounded hover:bg-slate-400/50 hover:text-indigo-700 transition-colors cursor-pointer text-slate-700"
           title="時計回りに90度回転"
         >
           <RotateCw className="w-3.5 h-3.5" />
@@ -67,10 +67,10 @@ export const ThumbnailCardFooter: React.FC<ThumbnailCardFooterProps> = ({
       </div>
 
       {/* ページ数ピル */}
-      <div className="pointer-events-auto bg-white/75 backdrop-blur-md px-2 py-1 rounded-md border border-white/60 shadow-sm">
+      <div className="pointer-events-auto bg-slate-300/70 backdrop-blur-md px-2 py-1 rounded-md border border-white/40 shadow-sm">
         <span
           data-testid="page-number"
-          className="text-xs font-semibold text-slate-700"
+          className="text-xs font-semibold text-slate-800"
         >
           {pageLabel}
         </span>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { DraggableProvidedDraggableProps, DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import type { PdfPageInfo } from '../types/pdf';
 import ThumbnailCardHeader from './ThumbnailCardHeader';
@@ -55,11 +55,17 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   innerRef,
   isDragging = false,
   thumbnailHeight = 283,
-  zoomLevel = 100,
   totalPages,
 }) => {
   const idx = displayIndex !== undefined ? displayIndex : (index !== undefined ? index : 0);
   const normalizedRotation = (((page.rotation % 360) + 360) % 360);
+  const isRotated90 = normalizedRotation === 90 || normalizedRotation === 270;
+  const [aspectRatio, setAspectRatio] = useState<number>(0.7071);
+
+  const cardWidth = Math.round(
+    isRotated90 ? thumbnailHeight / aspectRatio : thumbnailHeight * aspectRatio
+  );
+  const cardHeight = thumbnailHeight;
 
   const handleRotateCWClick = () => {
     if (onRotateCW) {
@@ -82,6 +88,8 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
       ref={innerRef}
       {...draggableProps}
       style={{
+        width: `${cardWidth}px`,
+        height: `${cardHeight}px`,
         ...draggableProps?.style,
       }}
       data-testid="thumbnail-card"
@@ -89,7 +97,7 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
       data-page-index={idx}
       data-file-name={page.fileName}
       data-rotation={normalizedRotation}
-      className={`group relative bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 select-none ${
+      className={`group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 select-none flex-shrink-0 ${
         isDragging ? 'shadow-2xl border-indigo-500 ring-2 ring-indigo-400 z-50 opacity-90' : 'border-slate-200'
       }`}
     >
@@ -103,8 +111,10 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
         thumbnailUrl={page.thumbnailUrl}
         rotation={page.rotation}
         displayIndex={idx}
-        thumbnailHeight={thumbnailHeight}
-        zoomLevel={zoomLevel}
+        width={cardWidth}
+        height={cardHeight}
+        isRotated90={isRotated90}
+        onAspectRatioChange={setAspectRatio}
         dragHandleProps={dragHandleProps}
       />
 
