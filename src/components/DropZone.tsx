@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { UploadCloud, FilePlus, Loader2 } from 'lucide-react';
 import DropZoneErrorBanner from './DropZoneErrorBanner';
 
@@ -31,7 +31,6 @@ export const DropZone: React.FC<DropZoneProps> = ({
   isProcessing = false,
   compact = false,
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = (fileList: FileList | File[]) => {
@@ -44,31 +43,6 @@ export const DropZone: React.FC<DropZoneProps> = ({
     }
     if (onFilesAdded && onFilesAdded !== onFilesSelected) {
       onFilesAdded(files);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isProcessing) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    if (isProcessing) return;
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
     }
   };
 
@@ -126,15 +100,8 @@ export const DropZone: React.FC<DropZoneProps> = ({
 
       <div
         data-testid="dropzone"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
         onClick={handleClick}
-        className={`relative w-full border-2 border-dashed rounded-2xl py-16 px-10 min-h-[250px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
-          isDragging
-            ? 'border-indigo-500 bg-indigo-50/50 scale-[1.01] shadow-inner'
-            : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50/80 shadow-sm'
-        }`}
+        className="relative w-full border-2 border-dashed border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50/80 rounded-2xl py-16 px-10 min-h-[250px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 shadow-sm"
       >
         <input
           ref={fileInputRef}
