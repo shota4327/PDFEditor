@@ -1,5 +1,4 @@
-import React from 'react';
-import type { DraggableProvidedDraggableProps, DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
+import React, { useState } from 'react';
 import type { PdfPageInfo } from '../types/pdf';
 import ThumbnailCardHeader from './ThumbnailCardHeader';
 import ThumbnailPreview from './ThumbnailPreview';
@@ -8,7 +7,7 @@ import ThumbnailCardFooter from './ThumbnailCardFooter';
 /**
  * ページサムネイルカードのプロパティ定義
  */
-interface ThumbnailCardProps {
+export interface ThumbnailCardProps {
   /** ページ情報 */
   page: PdfPageInfo;
   /** グリッド内インデックス */
@@ -23,22 +22,24 @@ interface ThumbnailCardProps {
   onRotateCCW?: (pageId: string) => void;
   /** ページ削除コールバック */
   onDelete: (pageId: string) => void;
-  /** DND ドラッグハンドルプロパティ */
-  dragHandleProps?: DraggableProvidedDragHandleProps | null;
-  /** DND ドラッガブル要素プロパティ */
-  draggableProps?: DraggableProvidedDraggableProps;
-  /** DND DOM 参照コールバック */
-  innerRef?: (element?: HTMLElement | null) => void;
+  /** ドラッグハンドルプロパティ */
+  dragHandleProps?: React.HTMLAttributes<HTMLElement> | null;
+  /** DOM 参照コールバック */
+  innerRef?: React.Ref<HTMLDivElement>;
+  /** カスタムスタイル（DndKit transform/transition等） */
+  style?: React.CSSProperties;
   /** ドラッグ中状態フラグ */
   isDragging?: boolean;
   /** サムネイルエリアの基準高さ（px） */
   thumbnailHeight?: number;
   /** 現在のズーム倍率 */
   zoomLevel?: number;
+  /** ドキュメントの総ページ数 */
+  totalPages?: number;
 }
 
 /**
- * 個別 PDF ページのプレビュー表示、回転、削除、ドラッグハンドルを提供するカード
+ * 個別 PDF ページのプレビュー表示、回転、削除、ドラッグ操作を提供するカード
  */
 export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   page,
@@ -49,14 +50,21 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   onRotateCCW,
   onDelete,
   dragHandleProps,
-  draggableProps,
   innerRef,
+  style,
   isDragging = false,
   thumbnailHeight = 283,
-  zoomLevel = 100,
+  totalPages,
 }) => {
   const idx = displayIndex !== undefined ? displayIndex : (index !== undefined ? index : 0);
   const normalizedRotation = (((page.rotation % 360) + 360) % 360);
+  const isRotated90 = normalizedRotation === 90 || normalizedRotation === 270;
+  const [aspectRatio, setAspectRatio] = useState<number>(0.7071);
+
+  const cardWidth = Math.round(
+    isRotated90 ? thumbnailHeight / aspectRatio : thumbnailHeight * aspectRatio
+  );
+  const cardHeight = thumbnailHeight;
 
   const handleRotateCWClick = () => {
     if (onRotateCW) {
@@ -77,16 +85,18 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   return (
     <div
       ref={innerRef}
-      {...draggableProps}
+      {...dragHandleProps}
       style={{
-        ...draggableProps?.style,
+        width: `${cardWidth}px`,
+        height: `${cardHeight}px`,
+        ...style,
       }}
       data-testid="thumbnail-card"
       data-page-id={page.id}
       data-page-index={idx}
       data-file-name={page.fileName}
       data-rotation={normalizedRotation}
-      className={`group relative bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col select-none ${
+      className={`group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 select-none flex-shrink-0 cursor-grab active:cursor-grabbing touch-none ${
         isDragging ? 'shadow-2xl border-indigo-500 ring-2 ring-indigo-400 z-50 opacity-90' : 'border-slate-200'
       }`}
     >
@@ -94,21 +104,25 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
         fileName={page.fileName}
         pageId={page.id}
         onDelete={onDelete}
-        dragHandleProps={dragHandleProps}
       />
 
       <ThumbnailPreview
         thumbnailUrl={page.thumbnailUrl}
         rotation={page.rotation}
         displayIndex={idx}
-        thumbnailHeight={thumbnailHeight}
-        zoomLevel={zoomLevel}
+        width={cardWidth}
+        height={cardHeight}
+        isRotated90={isRotated90}
+        onAspectRatioChange={setAspectRatio}
         dragHandleProps={dragHandleProps}
       />
 
       <ThumbnailCardFooter
+        rotation={page.rotation}
         onRotateCCW={handleRotateCCWClick}
         onRotateCW={handleRotateCWClick}
+        displayIndex={idx}
+        totalPages={totalPages}
       />
     </div>
   );

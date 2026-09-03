@@ -96,11 +96,12 @@ PDFEditor/
 │   │   ├── LoadingOverlay.tsx # 全画面ローディングオーバーレイ
 │   │   ├── DropZone.tsx      # ファイルドロップゾーン
 │   │   ├── DropZoneErrorBanner.tsx # エラー表示バナー
-│   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（DND対応）
-│   │   ├── ThumbnailCard.tsx # 各ページサムネイルカードコンテナ
-│   │   ├── ThumbnailCardHeader.tsx # カードヘッダー（ドラッグ・削除）
-│   │   ├── ThumbnailPreview.tsx    # サムネイル画像・回転プレビュー
-│   │   ├── ThumbnailCardFooter.tsx # カードフッター（個別回転ボタン）
+│   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（@dnd-kit リアルタイム並び替え & pointerWithin衝突検出）
+│   │   ├── SortableThumbnailCard.tsx # @dnd-kit Sortable & Framer Motion layout アニメーションラッパー
+│   │   ├── ThumbnailCard.tsx # 各ページサムネイルカード（プレビュー・オーバーレイコンテナ）
+│   │   ├── ThumbnailCardHeader.tsx # 上部オーバーレイ（タイトル・削除ピルバッジ）
+│   │   ├── ThumbnailPreview.tsx    # サムネイル画像・回転プレビュー描画領域
+│   │   ├── ThumbnailCardFooter.tsx # 下部オーバーレイ（回転コントロール・ページ数ピルバッジ）
 │   │   ├── Toolbar.tsx       # 操作ツールバー（ズーム、削除、出力）
 │   │   ├── PageCountBadge.tsx # 総ページ数バッジ
 │   │   ├── ZoomControls.tsx  # ズーム操作コントロール

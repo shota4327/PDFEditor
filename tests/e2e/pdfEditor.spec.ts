@@ -102,12 +102,17 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
 
       const firstCardBeforeId = await cards.nth(0).getAttribute('data-page-id');
 
-      // Perform reorder operation using keyboard navigation supported by @hello-pangea/dnd
+      // Perform reorder operation using pointer drag and drop
       const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
-      await sourceHandle.focus();
-      await page.keyboard.press('Space');
-      await page.keyboard.press('ArrowRight');
-      await page.keyboard.press('Space');
+      const targetHandle = cards.nth(1).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 10 });
+        await page.mouse.up();
+      }
 
       // Verify DOM card sequence updated
       const firstCardAfterId = await cards.nth(0).getAttribute('data-page-id');
@@ -226,6 +231,144 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       const resetBox = await card.boundingBox();
       expect(Math.abs(resetBox!.height - initialHeight)).toBeLessThan(5);
     });
+
+    test('T1.8: Multi-row 2D drag & drop reordering across rows (Issue #2)', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_3PAGES, SAMPLE_2PAGES]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(5, { timeout: 10000 });
+
+      // Zoom in to 150% so cards definitely wrap across multiple rows
+      const zoomInBtn = page.locator('[data-testid="zoom-in-btn"]');
+      await zoomInBtn.click();
+      await zoomInBtn.click();
+
+      // Verify cards are placed on different vertical positions (row 1 vs row 2)
+      const box0 = await cards.nth(0).boundingBox();
+      const box4 = await cards.nth(4).boundingBox();
+      expect(box0).toBeTruthy();
+      expect(box4).toBeTruthy();
+      expect(box4!.y).toBeGreaterThan(box0!.y + 50);
+
+      // Record first card ID before drag
+      const firstCardBeforeId = await cards.nth(0).getAttribute('data-page-id');
+
+      // Drag card 0 (row 1) to card 4 (row 2)
+      const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const targetHandle = cards.nth(4).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 15 });
+        await page.mouse.up();
+      }
+
+      // Verify DOM sequence updated: the former first card moved to row 2
+      const firstCardAfterId = await cards.nth(0).getAttribute('data-page-id');
+      expect(firstCardAfterId).not.toBe(firstCardBeforeId);
+      const lastCardAfterId = await cards.nth(4).getAttribute('data-page-id');
+      expect(lastCardAfterId).toBe(firstCardBeforeId);
+    });
+
+    test('T1.9: Mixed aspect ratio (Portrait & Landscape) drag & drop reordering without visual breaking (Issue #2)', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_3PAGES]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(3, { timeout: 10000 });
+
+      // Rotate card 1 by 90° to make it Landscape (~400px width) while cards 0 & 2 remain Portrait (~200px width)
+      await cards.nth(1).locator('[data-testid="rotate-cw-btn"]').click();
+      await expect(cards.nth(1).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+      await page.waitForTimeout(300);
+
+      const box0 = await cards.nth(0).boundingBox();
+      const box1 = await cards.nth(1).boundingBox();
+      expect(box0).toBeTruthy();
+      expect(box1).toBeTruthy();
+      expect(box1!.width).toBeGreaterThan(box0!.width + 50);
+
+      const id1Before = await cards.nth(1).getAttribute('data-page-id');
+
+      // Drag Portrait card 0 past Landscape card 1 to card 2
+      const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const targetHandle = cards.nth(2).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 15 });
+        await page.mouse.up();
+      }
+
+      // Verify DOM sequence updated: card 0 moved, landscape card 1 remains intact with 90°
+      const newCard0Id = await cards.nth(0).getAttribute('data-page-id');
+      expect(newCard0Id).toBe(id1Before);
+      await expect(cards.nth(0).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+      await page.waitForTimeout(300);
+
+      // Drag Landscape card (now index 0) back to position 1
+      const landSource = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const landTarget = cards.nth(1).locator('[data-testid="drag-handle"]');
+      const landSourceBox = await landSource.boundingBox();
+      const landTargetBox = await landTarget.boundingBox();
+      if (landSourceBox && landTargetBox) {
+        await page.mouse.move(landSourceBox.x + landSourceBox.width / 2, landSourceBox.y + landSourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(landTargetBox.x + landTargetBox.width / 2, landTargetBox.y + landTargetBox.height / 2, { steps: 15 });
+        await page.mouse.up();
+      }
+
+      // Verify sequence updated correctly
+      await expect(cards.nth(1).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+    });
+
+    test('T1.10: Drag reorder drop position consistency and immediate opacity restoration (Issue #2)', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_3PAGES]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(3, { timeout: 10000 });
+
+      const card0Id = await cards.nth(0).getAttribute('data-page-id');
+      const card1Id = await cards.nth(1).getAttribute('data-page-id');
+
+      // Drag card 0 towards card 1 by moving across the center point
+      const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const targetHandle = cards.nth(1).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+
+      expect(sourceBox).toBeTruthy();
+      expect(targetBox).toBeTruthy();
+
+      await page.mouse.move(sourceBox!.x + sourceBox!.width / 2, sourceBox!.y + sourceBox!.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(targetBox!.x + targetBox!.width / 2, targetBox!.y + targetBox!.height / 2, { steps: 10 });
+      await page.mouse.up();
+
+      // 1. Verify card 0 is now at index 1, and card 1 is at index 0
+      await expect(cards.nth(0)).toHaveAttribute('data-page-id', card1Id!);
+      await expect(cards.nth(1)).toHaveAttribute('data-page-id', card0Id!);
+
+      // 2. Verify all cards have opacity 1 (no semi-transparent stuck cards)
+      for (let i = 0; i < 3; i++) {
+        const opacity = await cards.nth(i).evaluate((el) => {
+          const style = window.getComputedStyle(el);
+          const parentStyle = el.parentElement ? window.getComputedStyle(el.parentElement) : null;
+          return {
+            cardOpacity: parseFloat(style.opacity),
+            parentOpacity: parentStyle ? parseFloat(parentStyle.opacity) : 1,
+          };
+        });
+        expect(opacity.cardOpacity).toBe(1);
+        expect(opacity.parentOpacity).toBe(1);
+      }
+    });
   });
 
   // =========================================================================
@@ -273,7 +416,7 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       await expect(cards).toHaveCount(3, { timeout: 10000 });
 
       for (let i = 0; i < 3; i++) {
-        await expect(cards.nth(i).locator('[data-testid="page-number"]')).toHaveText(`Page ${i + 1}`);
+        await expect(cards.nth(i).locator('[data-testid="page-number"]')).toHaveText(`${i + 1} / 3`);
       }
     });
 
@@ -368,13 +511,13 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       // 5. Reorder remaining page 2 to position 0
       const sourceHandle = cards.nth(1).locator('[data-testid="drag-handle"]');
       const targetHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
-      try {
-        await sourceHandle.dragTo(targetHandle);
-      } catch {
-        await sourceHandle.focus();
-        await page.keyboard.press('Space');
-        await page.keyboard.press('ArrowLeft');
-        await page.keyboard.press('Space');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 10 });
+        await page.mouse.up();
       }
 
       // 6. Export PDF download
