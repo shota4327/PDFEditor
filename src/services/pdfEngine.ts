@@ -1,6 +1,7 @@
+import '../utils/polyfills';
 import { PDFDocument, degrees } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.js?url';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { PdfDocumentData, PdfPageInfo, ExportPageSpec, PageRotation } from '../types/pdf';
 
 // Vite のローカルアセット取り込みを使用して pdfjs-dist の workerSrc を設定
@@ -9,7 +10,7 @@ if (typeof window !== 'undefined') {
     // Node / Vitest jsdom 環境では fake worker 用に空文字を設定
     pdfjsLib.GlobalWorkerOptions.workerSrc = '';
   } else {
-    // ブラウザ / Vite 環境では Vite の ?url アセットパスを利用
+    // ブラウザ / Vite 環境（単一HTML時は Data URL、開発時はアセットURL）
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
   }
 }
@@ -115,6 +116,7 @@ export async function renderPageThumbnail(
       context.fillRect(0, 0, canvas.width, canvas.height);
 
       const renderContext = {
+        canvas: canvas,
         canvasContext: context,
         viewport: viewport,
       };
@@ -125,7 +127,8 @@ export async function renderPageThumbnail(
       page.cleanup();
     }
   } finally {
-    await pdfDoc.destroy();
+    await pdfDoc.cleanup();
+    await loadingTask.destroy();
   }
 }
 
