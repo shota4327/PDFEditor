@@ -68,14 +68,14 @@ describe('UI Components', () => {
       expect(screen.getByText(/PDFファイルをドラッグ＆ドロップ/i)).toBeInTheDocument();
     });
 
-    it('handles file drop', () => {
+    it('handles file selection via hidden file input', () => {
       const handleFilesAdded = vi.fn();
       render(<DropZone onFilesAdded={handleFilesAdded} />);
-      const dropzone = screen.getByTestId('dropzone');
+      const fileInput = screen.getByTestId('file-input');
 
       const dummyFile = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
-      fireEvent.drop(dropzone, {
-        dataTransfer: {
+      fireEvent.change(fileInput, {
+        target: {
           files: [dummyFile],
         },
       });

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ensureFixturesExist } from './helpers/fixtureGenerator';
@@ -537,6 +538,49 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       });
 
       await expect(overlay).toHaveCount(0);
+    });
+
+    test('T5.3: Dropping a PDF file onto central DropZone area closes drag overlay and loads pages (Issue #16)', async ({ page }) => {
+      // 1. 初期状態で DropZone が表示され、DragOverlay が非表示であることを確認
+      const dropzone = page.locator('[data-testid="dropzone"]');
+      await expect(dropzone).toBeVisible();
+      const overlay = page.locator('[data-testid="global-drag-overlay"]');
+      await expect(overlay).toHaveCount(0);
+
+      // 2. window に dragenter を発火して全画面ドラッグオーバーレイを表示
+      await page.evaluate(() => {
+        const event = new Event('dragenter', { bubbles: true, cancelable: true }) as any;
+        event.dataTransfer = { types: ['Files'] };
+        window.dispatchEvent(event);
+      });
+      await expect(overlay).toBeVisible();
+
+      // 3. 中央の DropZone 要素に対して直接 drop イベントをディスパッチ
+      const fileBytes = Array.from(fs.readFileSync(SAMPLE_1PAGE));
+      await page.evaluate((bytes) => {
+        const uint8Array = new Uint8Array(bytes);
+        const file = new File([uint8Array], 'sample-1page.pdf', { type: 'application/pdf' });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+
+        const dropzoneEl = document.querySelector('[data-testid="dropzone"]');
+        if (dropzoneEl) {
+          const dropEvent = new DragEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer,
+          });
+          dropzoneEl.dispatchEvent(dropEvent);
+        }
+      }, fileBytes);
+
+      // 4. 全画面オーバーレイが即座に非表示になることを検証
+      await expect(overlay).toHaveCount(0);
+
+      // 5. PDFサムネイルカードが1枚正常に読み込まれることを検証
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(1, { timeout: 10000 });
+      await expect(page.locator('[data-testid="page-count"]')).toHaveText('1');
     });
   });
 });
