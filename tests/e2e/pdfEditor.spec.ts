@@ -11,6 +11,7 @@ const FIXTURES_DIR = path.resolve(__dirname, './fixtures');
 const SAMPLE_1PAGE = path.join(FIXTURES_DIR, 'sample-1page.pdf');
 const SAMPLE_2PAGES = path.join(FIXTURES_DIR, 'sample-2pages.pdf');
 const SAMPLE_3PAGES = path.join(FIXTURES_DIR, 'sample-3pages.pdf');
+const SAMPLE_JBIG2 = path.join(FIXTURES_DIR, 'sample-jbig2-scanned.pdf');
 const INVALID_FILE = path.join(FIXTURES_DIR, 'invalid-file.txt');
 
 test.beforeAll(async () => {
@@ -318,6 +319,23 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
 
       const cards = page.locator('[data-testid="thumbnail-card"]');
       await expect(cards).toHaveCount(0);
+    });
+
+    test('T2.6: Scanned document with JBIG2 compression renders non-blank thumbnail', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_JBIG2]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(1, { timeout: 15000 });
+
+      const thumbnailImg = cards.first().locator('img[data-testid="thumbnail-img"]');
+      await expect(thumbnailImg).toBeVisible({ timeout: 15000 });
+
+      const src = await thumbnailImg.getAttribute('src');
+      expect(src).toBeTruthy();
+      expect(src).toMatch(/^data:image\/jpeg/);
+      // Non-blank rendered image data URL is substantially larger than an empty white canvas
+      expect(src!.length).toBeGreaterThan(50000);
     });
   });
 

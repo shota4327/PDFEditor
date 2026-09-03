@@ -3,6 +3,7 @@ import { PDFDocument, degrees } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { PdfDocumentData, PdfPageInfo, ExportPageSpec, PageRotation } from '../types/pdf';
+import { OfflineBinaryDataFactory } from '../utils/jbig2Wasm';
 
 // Vite のローカルアセット取り込みを使用して pdfjs-dist の workerSrc を設定
 if (typeof window !== 'undefined') {
@@ -89,7 +90,12 @@ export async function renderPageThumbnail(
   pageIndex: number,
   scale?: number
 ): Promise<string> {
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBytes.slice() });
+  const loadingTask = pdfjsLib.getDocument({
+    data: pdfBytes.slice(),
+    useWorkerFetch: false,
+    BinaryDataFactory: OfflineBinaryDataFactory,
+    wasmUrl: 'wasm/',
+  });
   const pdfDoc = await loadingTask.promise;
 
   try {

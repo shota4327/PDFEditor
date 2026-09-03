@@ -51,7 +51,7 @@ if (typeof HTMLCanvasElement !== 'undefined') {
         putImageData: vi.fn(),
         createImageData: vi.fn((w, h) => ({ data: new Uint8ClampedArray((w || 1) * (h || 1) * 4) })),
         setTransform: vi.fn(),
-        getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
+        getTransform: vi.fn(() => (globalThis.DOMMatrix ? new globalThis.DOMMatrix() : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, invertSelf: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) })),
         resetTransform: vi.fn(),
         transform: vi.fn(),
         drawImage: vi.fn(),
@@ -118,6 +118,7 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
     is2D = true;
     isIdentity = true;
     inverse = vi.fn(() => this);
+    invertSelf = vi.fn(() => this);
     multiply = vi.fn(() => this);
     translate = vi.fn(() => this);
     scale = vi.fn(() => this);

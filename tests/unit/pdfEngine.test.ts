@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
 import { PDFDocument } from 'pdf-lib';
 import { createSamplePdf, createSamplePdfFile } from './pdfHelpers';
 import {
@@ -7,6 +9,7 @@ import {
   exportPdf,
   createDownloadLink,
 } from '../../src/services/pdfEngine';
+import { OfflineBinaryDataFactory } from '../../src/utils/jbig2Wasm';
 import type { ExportPageSpec } from '../../src/types/pdf';
 
 describe('pdfEngine service', () => {
@@ -65,6 +68,31 @@ describe('pdfEngine service', () => {
 
       expect(typeof dataUrl).toBe('string');
       expect(dataUrl).toContain('data:image/');
+    });
+
+    it('renders thumbnail for JBIG2-compressed scanned PDF without network', async () => {
+      const filePath = path.resolve(__dirname, '../e2e/fixtures/sample-jbig2-scanned.pdf');
+      const bytes = fs.readFileSync(filePath);
+      const dataUrl = await renderPageThumbnail(new Uint8Array(bytes), 0);
+
+      expect(typeof dataUrl).toBe('string');
+      expect(dataUrl).toContain('data:image/');
+    });
+  });
+
+  describe('OfflineBinaryDataFactory', () => {
+    it('returns JBIG2 wasm bytes for wasmUrl kind and jbig2.wasm', async () => {
+      const factory = new OfflineBinaryDataFactory();
+      const bytes = await factory.fetch({ kind: 'wasmUrl', filename: 'jbig2.wasm' });
+      expect(bytes).toBeInstanceOf(Uint8Array);
+      expect(bytes.length).toBe(104852);
+    });
+
+    it('throws error for unsupported request kinds', async () => {
+      const factory = new OfflineBinaryDataFactory();
+      await expect(factory.fetch({ kind: 'unsupported', filename: 'foo.bin' })).rejects.toThrow(
+        'Unsupported offline binary data request'
+      );
     });
   });
 

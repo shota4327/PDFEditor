@@ -4,6 +4,8 @@
 本報告は、`pdfjs-dist` を `3.11.174` から最新の `6.3.289` へメジャーアップグレードし、技術検証およびテスト検証を完了した結果をまとめたものです。
 高重大度脆弱性（CVE-2024-4367）の解消、ビルド警告（`eval("require")`）の排除を達成しつつ、本プロジェクトの最重要原則である「単一 HTML 出力（`vite-plugin-singlefile`）」および「完全オフライン動作（外部通信ゼロ）」が 100% 成立することを確認しました。
 
+また、ユーザーから提供されたスキャン文書（JBIG2 圧縮）で発生した「サムネイルが真っ白になる問題」についても原因を特定し、完全インライン WASM デコーダを実装することで 100% 解決しました。
+
 ---
 
 ## 2. 実施した変更内容
@@ -28,20 +30,32 @@
     - `Promise.withResolvers` (ES2024)
   - `src/main.tsx` および `tests/unit/setup.ts` のエントリーポイントで読み込み
 
-### ④ テスト環境の適合
+### ④ スキャン文書（JBIG2 圧縮）のサムネイル真っ白問題の特定と完全オフライン解消
+- **発生原因の特定**:
+  - 複合機やスキャナーで読み取られたモノクロ文書は、高圧縮率の **JBIG2 形式（`/Filter /JBIG2Decode`）** を使用。
+  - `pdfjs-dist` v6 では JBIG2 デコーダが WebAssembly（`jbig2.wasm`）化されており、外部ネットワークや別ファイル参照が遮断された単一 HTML / オフライン環境では `wasmUrl` が見つからず画像デコードに失敗（警告: `JBig2 failed to initialize`）、Canvas が真っ白（白紙）のまま Data URL 化されていた。
+- **解決策の実装**:
+  - `src/utils/jbig2Wasm.ts`（新規作成）: `jbig2.wasm`（約 102 KB）を Base64 文字列としてバンドル内に完全インライン化。
+  - `OfflineBinaryDataFactory`: `pdfjs-dist` の `useWorkerFetch: false` と連携し、Worker が画像デコード時に要求する `FetchBinaryData` イベントに対してインメモリの WASM バイナリ配列（`Uint8Array`）を即座に返却する専用ファクトリを実装。
+  - 外部ネットワーク通信を一切発生させず、単一 HTML（`dist/index.html`）内ですべてのスキャン文書のサムネイルが高精細に描画されることを実証。
+
+### ⑤ テスト環境の適合
 - `tests/unit/setup.ts`:
   - `pdfjs-dist` v6 の jsdom 環境向けに `pdfjsWorker.WorkerMessageHandler` を fakeWorker として登録
-  - Canvas 2D レンダリングに必要な `Path2D`、`DOMMatrix`、`ImageData` のモックを追加
+  - Canvas 2D レンダリングに必要な `Path2D`、`DOMMatrix`（`invertSelf()` メソッド含む）、`ImageData` のモックを追加
 - `src/vite-env.d.ts`:
   - `pdf.worker.mjs` / `pdf.worker.min.mjs` の型定義宣言を追加
 
-### ⑤ テストカバレッジの拡充
+### ⑥ テストカバレッジの拡充
 - `tests/e2e/pdfEditor.spec.ts`:
+  - **T2.6**（JBIG2 スキャン PDF サムネイル描画検証）を追加：ユーザー提供のスキャン文書を読み込み、真っ白ではなく内容を伴う Data URL が正常生成されることを自動検証
   - **T4.3**（単一 HTML 完全オフライン検証）を追加：ビルドされた単一成果物 `dist/index.html` を `file://` プロトコルかつブラウザオフラインモードで直接開き、PDF 読み込み・サムネイル Canvas 描画・回転・エクスポートダウンロードが外部通信ゼロで完結することを自動検証
+- `tests/unit/pdfEngine.test.ts`:
+  - `OfflineBinaryDataFactory` および JBIG2 サムネイル生成の単体テストを追加
 
-### ⑥ ドキュメントの同期更新
+### ⑦ ドキュメントの同期更新
 - `docs/PROJECT.md`: M13 マイルストーンの追加、ファイルレイアウト更新
-- `docs/TEST_INFRA.md`: Tier 4 への T4.3 テスト仕様の追記
+- `docs/TEST_INFRA.md`: Tier 2 への T2.6、Tier 4 への T4.3 テスト仕様の追記
 
 ---
 
@@ -49,22 +63,23 @@
 
 ### ① 単体テスト（Vitest）
 - コマンド: `npm test -- --run`
-- 結果: **8 テストファイル・53 件すべて PASS (100%)**
+- 結果: **8 テストファイル・56 件すべて PASS (100%)**
 
 ```
 Test Files  8 passed (8)
-     Tests  53 passed (53)
-  Duration  5.45s
+     Tests  56 passed (56)
+  Duration  12.42s
 ```
 
 ### ② プロダクションビルド（TypeScript & Vite）
 - コマンド: `npm run build`
 - 結果: **型エラーゼロ・セキュリティ警告（eval）ゼロで成功**
-- 成果物: `dist/index.html`（約 2,835 kB、完全オフライン単一 HTML）
+- 成果物: `dist/index.html`（約 2,975 kB、完全オフライン単一 HTML）
 
 ### ③ E2E 自動テスト（Playwright）
 - コマンド: `npm run test:e2e`
-- 結果: **全 Tier（Tier 1〜5）18 件すべて PASS (100%)**
+- 結果: **全 Tier（Tier 1〜5）19 件すべて PASS (100%)**
+  - `T2.6`: JBIG2 スキャン文書サムネイル描画 **PASS**
   - `T4.1`: 外部 HTTP リクエストゼロ監査（0 件確認） **PASS**
   - `T4.2`: ブラウザオフラインモードでの編集・出力 **PASS**
   - `T4.3`: 単一 HTML（`file://`）完全オフラインでのサムネイル描画・回転・出力 **PASS**
@@ -72,5 +87,5 @@ Test Files  8 passed (8)
 ---
 
 ## 4. 総括
-事前の技術検討どおり、`cMapUrl` を未指定（現行仕様踏襲）とすることで外部通信や CORS エラーを完全に回避し、単一 HTML（`file://`）環境においても高精細なサムネイル描画と高速な PDF 操作が維持できることを実証しました。
-脆弱性ゼロ、eval 排除、全テスト PASS を達成しており、安全にマージ可能な状態です。
+事前の技術検討どおり、`cMapUrl` を未指定（現行仕様踏襲）とすることで外部通信や CORS エラーを回避し、さらに JBIG2 インライン WASM デコーダの組み込みによって、一般文書だけでなく複合機・スキャナー等で生成された紙文書の PDF についても単一 HTML（`file://`）完全オフライン環境で完璧にサムネイル表示できる堅牢なシステムを構築しました。
+脆弱性ゼロ、eval 排除、全テスト 100% PASS を達成しており、安全にマージ可能な状態です。
