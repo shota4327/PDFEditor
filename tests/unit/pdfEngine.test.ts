@@ -6,9 +6,11 @@ import { createSamplePdf, createSamplePdfFile } from './pdfHelpers';
 import {
   loadPdfDocument,
   renderPageThumbnail,
+  renderPageThumbnailFromDoc,
   exportPdf,
   createDownloadLink,
 } from '../../src/services/pdfEngine';
+import * as pdfjsLib from 'pdfjs-dist';
 import { OfflineBinaryDataFactory } from '../../src/utils/jbig2Wasm';
 import type { ExportPageSpec } from '../../src/types/pdf';
 
@@ -77,6 +79,27 @@ describe('pdfEngine service', () => {
 
       expect(typeof dataUrl).toBe('string');
       expect(dataUrl).toContain('data:image/');
+    });
+  });
+
+  describe('renderPageThumbnailFromDoc', () => {
+    it('renders data URLs for multiple pages using a single loaded PDFDocumentProxy', async () => {
+      const pdfBytes = await createSamplePdf({ pageCount: 2 });
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes.slice() });
+      const pdfDoc = await loadingTask.promise;
+
+      try {
+        const dataUrlPage1 = await renderPageThumbnailFromDoc(pdfDoc, 0);
+        expect(typeof dataUrlPage1).toBe('string');
+        expect(dataUrlPage1).toContain('data:image/');
+
+        const dataUrlPage2 = await renderPageThumbnailFromDoc(pdfDoc, 1);
+        expect(typeof dataUrlPage2).toBe('string');
+        expect(dataUrlPage2).toContain('data:image/');
+      } finally {
+        await pdfDoc.cleanup();
+        await loadingTask.destroy();
+      }
     });
   });
 

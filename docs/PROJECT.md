@@ -46,6 +46,11 @@ function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Promise<PdfDocu
 function renderPageThumbnail(pdfBytes: Uint8Array, pageIndex: number, scale?: number): Promise<string>;
 
 /**
+ * 読み込み済みの PDFDocumentProxy から特定ページを Canvas 描画し、JPEG Data URL を生成
+ */
+function renderPageThumbnailFromDoc(pdfDoc: pdfjsLib.PDFDocumentProxy, pageIndex: number, scale?: number): Promise<string>;
+
+/**
  * 指定されたページ順序・回転角度に基づき新規 PDF を結合・構築し、Uint8Array を返却
  */
 function exportPdf(pages: ExportPageSpec[]): Promise<Uint8Array>;

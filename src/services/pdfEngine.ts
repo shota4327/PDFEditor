@@ -45,28 +45,55 @@ export async function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Pr
 
   const pages: PdfPageInfo[] = [];
 
-  for (let i = 0; i < pageCount; i++) {
-    const page = pdfDoc.getPage(i);
-    const rawRotation = page.getRotation().angle;
-    const normalizedOriginalRotation = (((rawRotation % 360) + 360) % 360) as PageRotation;
+  // ドキュメント全体に対して1度だけ pdfjs ドキュメントをロード
+  let loadingTask: any = null;
+  let pdfjsDoc: pdfjsLib.PDFDocumentProxy | null = null;
 
-    let thumbnailUrl = '';
-    try {
-      thumbnailUrl = await renderPageThumbnail(pdfBytes, i);
-    } catch (e) {
-      console.warn(`ページ ${i + 1} (${fileName}) のサムネイル生成に失敗しました:`, e);
-    }
-
-    pages.push({
-      id: `${fileId}_page_${i}_${Math.random().toString(36).substring(2, 7)}`,
-      fileId,
-      fileName,
-      pageIndex: i,
-      originalRotation: normalizedOriginalRotation,
-      rotation: 0,
-      thumbnailUrl,
-      pdfBytes,
+  try {
+    loadingTask = pdfjsLib.getDocument({
+      data: pdfBytes.slice(),
+      useWorkerFetch: false,
+      BinaryDataFactory: OfflineBinaryDataFactory,
+      wasmUrl: 'wasm/',
     });
+    pdfjsDoc = await loadingTask.promise;
+  } catch (e) {
+    console.warn(`ドキュメント (${fileName}) のサムネイル初期化に失敗しました:`, e);
+  }
+
+  try {
+    for (let i = 0; i < pageCount; i++) {
+      const page = pdfDoc.getPage(i);
+      const rawRotation = page.getRotation().angle;
+      const normalizedOriginalRotation = (((rawRotation % 360) + 360) % 360) as PageRotation;
+
+      let thumbnailUrl = '';
+      if (pdfjsDoc) {
+        try {
+          thumbnailUrl = await renderPageThumbnailFromDoc(pdfjsDoc, i);
+        } catch (e) {
+          console.warn(`ページ ${i + 1} (${fileName}) のサムネイル生成に失敗しました:`, e);
+        }
+      }
+
+      pages.push({
+        id: `${fileId}_page_${i}_${Math.random().toString(36).substring(2, 7)}`,
+        fileId,
+        fileName,
+        pageIndex: i,
+        originalRotation: normalizedOriginalRotation,
+        rotation: 0,
+        thumbnailUrl,
+        pdfBytes,
+      });
+    }
+  } finally {
+    if (pdfjsDoc) {
+      await pdfjsDoc.cleanup();
+    }
+    if (loadingTask) {
+      await loadingTask.destroy();
+    }
   }
 
   return {
@@ -78,7 +105,56 @@ export async function loadPdfDocument(file: File | ArrayBuffer | Uint8Array): Pr
 }
 
 /**
+ * 読み込み済みの PDFDocumentProxy から特定のページを Canvas にレンダリングし、JPEG Data URL を生成します。
+ *
+ * @param pdfDoc 読み込み済みの PDF ドキュメントプロキシ
+ * @param pageIndex レンダリングするページインデックス（0始まり）
+ * @param scale レンダリング倍率（省略時は横幅1200pxを基準に自動計算）
+ * @returns レンダリングされた画像の Data URL
+ */
+export async function renderPageThumbnailFromDoc(
+  pdfDoc: pdfjsLib.PDFDocumentProxy,
+  pageIndex: number,
+  scale?: number
+): Promise<string> {
+  const page = await pdfDoc.getPage(pageIndex + 1); // pdfjs は 1 始まり
+
+  try {
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
+    const targetWidth = 1200;
+    const computedScale = scale !== undefined ? scale : (targetWidth / (unscaledViewport.width || 1));
+    const viewport = page.getViewport({ scale: computedScale });
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Canvas 2D コンテキストが利用できません');
+    }
+
+    canvas.width = Math.max(1, Math.floor(viewport.width));
+    canvas.height = Math.max(1, Math.floor(viewport.height));
+
+    // Canvas を白色（用紙の背景色）で初期化
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    const renderContext = {
+      canvas: canvas,
+      canvasContext: context,
+      viewport: viewport,
+    };
+
+    await page.render(renderContext).promise;
+    return canvas.toDataURL('image/jpeg', 0.95);
+  } finally {
+    page.cleanup();
+  }
+}
+
+/**
  * 特定の PDF ページを HTML5 Canvas にレンダリングし、JPEG Data URL を生成します。
+ * （単体呼び出し用・後方互換用ラッパー）
  *
  * @param pdfBytes PDF ドキュメントのバイナリバイト列
  * @param pageIndex レンダリングするページインデックス（0始まり）
@@ -99,39 +175,7 @@ export async function renderPageThumbnail(
   const pdfDoc = await loadingTask.promise;
 
   try {
-    const page = await pdfDoc.getPage(pageIndex + 1); // pdfjs は 1 始まり
-
-    try {
-      const unscaledViewport = page.getViewport({ scale: 1.0 });
-      const targetWidth = 1200;
-      const computedScale = scale !== undefined ? scale : (targetWidth / (unscaledViewport.width || 1));
-      const viewport = page.getViewport({ scale: computedScale });
-
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-
-      if (!context) {
-        throw new Error('Canvas 2D コンテキストが利用できません');
-      }
-
-      canvas.width = Math.max(1, Math.floor(viewport.width));
-      canvas.height = Math.max(1, Math.floor(viewport.height));
-
-      // Canvas を白色（用紙の背景色）で初期化
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      const renderContext = {
-        canvas: canvas,
-        canvasContext: context,
-        viewport: viewport,
-      };
-
-      await page.render(renderContext).promise;
-      return canvas.toDataURL('image/jpeg', 0.95);
-    } finally {
-      page.cleanup();
-    }
+    return await renderPageThumbnailFromDoc(pdfDoc, pageIndex, scale);
   } finally {
     await pdfDoc.cleanup();
     await loadingTask.destroy();
