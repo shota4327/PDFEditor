@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   DndContext,
   PointerSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
   DragStartEvent,
   DragOverEvent,
   DragOverlay,
-  pointerWithin,
-  rectIntersection,
-  CollisionDetection,
+  closestCenter,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -42,17 +39,6 @@ interface ThumbnailGridProps {
 }
 
 /**
- * ポインター位置を最優先し、未検知時は矩形交差で判定する2Dグリッド向け衝突検出
- */
-const customCollisionDetection: CollisionDetection = (args) => {
-  const pointerCollisions = pointerWithin(args);
-  if (pointerCollisions.length > 0) {
-    return pointerCollisions;
-  }
-  return rectIntersection(args);
-};
-
-/**
  * 読み込まれた全ページのサムネイルカードをレスポンシブなグリッドで配置し、異なる縦横比混在でも崩れないリアルタイム並び替えを提供するコンポーネント
  */
 export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
@@ -65,6 +51,7 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   zoomLevel = 100,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const initialPagesRef = useRef<PdfPageInfo[] | null>(null);
   const thumbnailHeight = Math.round(283 * (zoomLevel / 100));
 
   const sensors = useSensors(
@@ -77,6 +64,7 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   );
 
   const handleDragStart = (event: DragStartEvent) => {
+    initialPagesRef.current = [...pages];
     setActiveId(String(event.active.id));
   };
 
@@ -92,17 +80,25 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = () => {
+    // リアルタイム並び替え済みのDOM位置をそのまま確定とし、二重並び替えを排除
     setActiveId(null);
-    if (!over || active.id === over.id) return;
+    initialPagesRef.current = null;
+  };
 
-    const oldIndex = pages.findIndex((p) => p.id === active.id);
-    const newIndex = pages.findIndex((p) => p.id === over.id);
-
-    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-      onReorder(oldIndex, newIndex);
+  const handleDragCancel = () => {
+    // ドラッグ中断時、開始前の初期順序に安全にロールバック
+    if (initialPagesRef.current) {
+      const initOrder = initialPagesRef.current;
+      initOrder.forEach((page, targetIdx) => {
+        const currentIdx = pages.findIndex((p) => p.id === page.id);
+        if (currentIdx !== -1 && currentIdx !== targetIdx) {
+          onReorder(currentIdx, targetIdx);
+        }
+      });
     }
+    setActiveId(null);
+    initialPagesRef.current = null;
   };
 
   if (pages.length === 0) {
@@ -115,10 +111,11 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={customCollisionDetection}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <SortableContext items={pages.map((p) => p.id)} strategy={() => null}>
         <div
@@ -131,6 +128,7 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
               page={page}
               displayIndex={index}
               index={index}
+              isDragging={activeId === page.id}
               onRotate={onRotate}
               onRotateCW={onRotateCW}
               onRotateCCW={onRotateCCW}
@@ -143,7 +141,7 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
         </div>
       </SortableContext>
 
-      <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+      <DragOverlay dropAnimation={null}>
         {activePage && activeIndex !== -1 ? (
           <div className="rotate-2 scale-105 shadow-2xl pointer-events-none">
             <ThumbnailCard

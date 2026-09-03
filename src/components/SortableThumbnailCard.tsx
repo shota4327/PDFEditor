@@ -11,8 +11,10 @@ export const SortableThumbnailCard: React.FC<ThumbnailCardProps> = (props) => {
     attributes,
     listeners,
     setNodeRef,
-    isDragging,
+    isDragging: hookIsDragging,
   } = useSortable({ id: props.page.id });
+
+  const effectiveIsDragging = props.isDragging !== undefined ? props.isDragging : hookIsDragging;
 
   return (
     <motion.div
@@ -22,14 +24,14 @@ export const SortableThumbnailCard: React.FC<ThumbnailCardProps> = (props) => {
       }}
       ref={setNodeRef}
       style={{
-        opacity: isDragging ? 0.25 : 1,
+        opacity: effectiveIsDragging ? 0.25 : 1,
         touchAction: 'none',
       }}
       className="flex-shrink-0"
     >
       <ThumbnailCard
         {...props}
-        isDragging={isDragging}
+        isDragging={effectiveIsDragging}
         dragHandleProps={{
           ...attributes,
           ...listeners,

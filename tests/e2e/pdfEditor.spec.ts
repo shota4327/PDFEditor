@@ -309,6 +309,7 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       const newCard0Id = await cards.nth(0).getAttribute('data-page-id');
       expect(newCard0Id).toBe(id1Before);
       await expect(cards.nth(0).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+      await page.waitForTimeout(300);
 
       // Drag Landscape card (now index 0) back to position 1
       const landSource = cards.nth(0).locator('[data-testid="drag-handle"]');
@@ -324,6 +325,49 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
 
       // Verify sequence updated correctly
       await expect(cards.nth(1).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+    });
+
+    test('T1.10: Drag reorder drop position consistency and immediate opacity restoration (Issue #2)', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_3PAGES]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(3, { timeout: 10000 });
+
+      const card0Id = await cards.nth(0).getAttribute('data-page-id');
+      const card1Id = await cards.nth(1).getAttribute('data-page-id');
+
+      // Drag card 0 towards card 1 by moving across the center point
+      const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const targetHandle = cards.nth(1).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+
+      expect(sourceBox).toBeTruthy();
+      expect(targetBox).toBeTruthy();
+
+      await page.mouse.move(sourceBox!.x + sourceBox!.width / 2, sourceBox!.y + sourceBox!.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(targetBox!.x + targetBox!.width / 2, targetBox!.y + targetBox!.height / 2, { steps: 10 });
+      await page.mouse.up();
+
+      // 1. Verify card 0 is now at index 1, and card 1 is at index 0
+      await expect(cards.nth(0)).toHaveAttribute('data-page-id', card1Id!);
+      await expect(cards.nth(1)).toHaveAttribute('data-page-id', card0Id!);
+
+      // 2. Verify all cards have opacity 1 (no semi-transparent stuck cards)
+      for (let i = 0; i < 3; i++) {
+        const opacity = await cards.nth(i).evaluate((el) => {
+          const style = window.getComputedStyle(el);
+          const parentStyle = el.parentElement ? window.getComputedStyle(el.parentElement) : null;
+          return {
+            cardOpacity: parseFloat(style.opacity),
+            parentOpacity: parentStyle ? parseFloat(parentStyle.opacity) : 1,
+          };
+        });
+        expect(opacity.cardOpacity).toBe(1);
+        expect(opacity.parentOpacity).toBe(1);
+      }
     });
   });
 
