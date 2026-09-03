@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import type { DraggableProvidedDraggableProps, DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import type { PdfPageInfo } from '../types/pdf';
 import ThumbnailCardHeader from './ThumbnailCardHeader';
 import ThumbnailPreview from './ThumbnailPreview';
@@ -8,7 +7,7 @@ import ThumbnailCardFooter from './ThumbnailCardFooter';
 /**
  * ページサムネイルカードのプロパティ定義
  */
-interface ThumbnailCardProps {
+export interface ThumbnailCardProps {
   /** ページ情報 */
   page: PdfPageInfo;
   /** グリッド内インデックス */
@@ -23,12 +22,12 @@ interface ThumbnailCardProps {
   onRotateCCW?: (pageId: string) => void;
   /** ページ削除コールバック */
   onDelete: (pageId: string) => void;
-  /** DND ドラッグハンドルプロパティ */
-  dragHandleProps?: DraggableProvidedDragHandleProps | null;
-  /** DND ドラッガブル要素プロパティ */
-  draggableProps?: DraggableProvidedDraggableProps;
-  /** DND DOM 参照コールバック */
-  innerRef?: (element?: HTMLElement | null) => void;
+  /** ドラッグハンドルプロパティ */
+  dragHandleProps?: React.HTMLAttributes<HTMLElement> | null;
+  /** DOM 参照コールバック */
+  innerRef?: React.Ref<HTMLDivElement>;
+  /** カスタムスタイル（DndKit transform/transition等） */
+  style?: React.CSSProperties;
   /** ドラッグ中状態フラグ */
   isDragging?: boolean;
   /** サムネイルエリアの基準高さ（px） */
@@ -51,8 +50,8 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   onRotateCCW,
   onDelete,
   dragHandleProps,
-  draggableProps,
   innerRef,
+  style,
   isDragging = false,
   thumbnailHeight = 283,
   totalPages,
@@ -86,18 +85,18 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   return (
     <div
       ref={innerRef}
-      {...draggableProps}
+      {...dragHandleProps}
       style={{
         width: `${cardWidth}px`,
         height: `${cardHeight}px`,
-        ...draggableProps?.style,
+        ...style,
       }}
       data-testid="thumbnail-card"
       data-page-id={page.id}
       data-page-index={idx}
       data-file-name={page.fileName}
       data-rotation={normalizedRotation}
-      className={`group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 select-none flex-shrink-0 ${
+      className={`group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 select-none flex-shrink-0 cursor-grab active:cursor-grabbing touch-none ${
         isDragging ? 'shadow-2xl border-indigo-500 ring-2 ring-indigo-400 z-50 opacity-90' : 'border-slate-200'
       }`}
     >

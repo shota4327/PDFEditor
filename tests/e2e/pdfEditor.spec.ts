@@ -102,12 +102,17 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
 
       const firstCardBeforeId = await cards.nth(0).getAttribute('data-page-id');
 
-      // Perform reorder operation using keyboard navigation supported by @hello-pangea/dnd
+      // Perform reorder operation using pointer drag and drop
       const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
-      await sourceHandle.focus();
-      await page.keyboard.press('Space');
-      await page.keyboard.press('ArrowRight');
-      await page.keyboard.press('Space');
+      const targetHandle = cards.nth(1).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 10 });
+        await page.mouse.up();
+      }
 
       // Verify DOM card sequence updated
       const firstCardAfterId = await cards.nth(0).getAttribute('data-page-id');
@@ -225,6 +230,47 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
 
       const resetBox = await card.boundingBox();
       expect(Math.abs(resetBox!.height - initialHeight)).toBeLessThan(5);
+    });
+
+    test('T1.8: Multi-row 2D drag & drop reordering across rows (Issue #2)', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_3PAGES, SAMPLE_2PAGES]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(5, { timeout: 10000 });
+
+      // Zoom in to 150% so cards definitely wrap across multiple rows
+      const zoomInBtn = page.locator('[data-testid="zoom-in-btn"]');
+      await zoomInBtn.click();
+      await zoomInBtn.click();
+
+      // Verify cards are placed on different vertical positions (row 1 vs row 2)
+      const box0 = await cards.nth(0).boundingBox();
+      const box4 = await cards.nth(4).boundingBox();
+      expect(box0).toBeTruthy();
+      expect(box4).toBeTruthy();
+      expect(box4!.y).toBeGreaterThan(box0!.y + 50);
+
+      // Record first card ID before drag
+      const firstCardBeforeId = await cards.nth(0).getAttribute('data-page-id');
+
+      // Drag card 0 (row 1) to card 4 (row 2)
+      const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const targetHandle = cards.nth(4).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 15 });
+        await page.mouse.up();
+      }
+
+      // Verify DOM sequence updated: the former first card moved to row 2
+      const firstCardAfterId = await cards.nth(0).getAttribute('data-page-id');
+      expect(firstCardAfterId).not.toBe(firstCardBeforeId);
+      const lastCardAfterId = await cards.nth(4).getAttribute('data-page-id');
+      expect(lastCardAfterId).toBe(firstCardBeforeId);
     });
   });
 
@@ -368,13 +414,13 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       // 5. Reorder remaining page 2 to position 0
       const sourceHandle = cards.nth(1).locator('[data-testid="drag-handle"]');
       const targetHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
-      try {
-        await sourceHandle.dragTo(targetHandle);
-      } catch {
-        await sourceHandle.focus();
-        await page.keyboard.press('Space');
-        await page.keyboard.press('ArrowLeft');
-        await page.keyboard.press('Space');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 10 });
+        await page.mouse.up();
       }
 
       // 6. Export PDF download

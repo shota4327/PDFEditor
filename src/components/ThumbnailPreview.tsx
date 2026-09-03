@@ -1,10 +1,5 @@
 import React from 'react';
 import { FileText } from 'lucide-react';
-import type { DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
-
-/**
- * サムネイルプレビュー領域のプロパティ定義
- */
 export interface ThumbnailPreviewProps {
   /** サムネイル画像の Data URL */
   thumbnailUrl?: string;
@@ -20,8 +15,8 @@ export interface ThumbnailPreviewProps {
   isRotated90: boolean;
   /** 画像ロード時のアスペクト比通知コールバック */
   onAspectRatioChange?: (ratio: number) => void;
-  /** DND ドラッグハンドルプロパティ */
-  dragHandleProps?: DraggableProvidedDragHandleProps | null;
+  /** ドラッグハンドルプロパティ */
+  dragHandleProps?: React.HTMLAttributes<HTMLElement> | null;
 }
 
 /**

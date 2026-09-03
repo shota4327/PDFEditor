@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from '@hello-pangea/dnd';
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  pointerWithin,
+  rectIntersection,
+  CollisionDetection,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import SortableThumbnailCard from './SortableThumbnailCard';
 import ThumbnailCard from './ThumbnailCard';
 import type { PdfPageInfo } from '../types/pdf';
 
@@ -29,7 +42,18 @@ interface ThumbnailGridProps {
 }
 
 /**
- * 読み込まれた全ページのサムネイルカードをレスポンシブなグリッドで配置し、DND並び替えを提供するコンポーネント
+ * ポインター位置を最優先し、未検知時は矩形交差で判定する2Dグリッド向け衝突検出
+ */
+const customCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  return rectIntersection(args);
+};
+
+/**
+ * 読み込まれた全ページのサムネイルカードをレスポンシブなグリッドで配置し、@dnd-kitによる複数行2D並び替えを提供するコンポーネント
  */
 export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   pages,
@@ -40,57 +64,88 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   onDelete,
   zoomLevel = 100,
 }) => {
+  const [activeId, setActiveId] = useState<string | null>(null);
   const thumbnailHeight = Math.round(283 * (zoomLevel / 100));
 
-  const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    if (result.destination.index === result.source.index) return;
-    onReorder(result.source.index, result.destination.index);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = pages.findIndex((p) => p.id === active.id);
+    const newIndex = pages.findIndex((p) => p.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      onReorder(oldIndex, newIndex);
+    }
   };
 
   if (pages.length === 0) {
     return null;
   }
 
+  const activePage = activeId ? pages.find((p) => p.id === activeId) : null;
+  const activeIndex = activePage ? pages.indexOf(activePage) : -1;
+
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId="pdf-pages-grid" direction="horizontal">
-        {(provided, snapshot) => (
-          <div
-            data-testid="thumbnail-grid"
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={`flex flex-wrap gap-5 p-4 min-h-[200px] rounded-xl transition-colors items-start ${
-              snapshot.isDraggingOver ? 'bg-indigo-50/40 border border-indigo-200' : ''
-            }`}
-          >
-            {pages.map((page, index) => (
-              <Draggable key={page.id} draggableId={page.id} index={index}>
-                {(dragProvided, dragSnapshot) => (
-                  <ThumbnailCard
-                    page={page}
-                    displayIndex={index}
-                    index={index}
-                    onRotate={onRotate}
-                    onRotateCW={onRotateCW}
-                    onRotateCCW={onRotateCCW}
-                    onDelete={onDelete}
-                    innerRef={dragProvided.innerRef}
-                    draggableProps={dragProvided.draggableProps}
-                    dragHandleProps={dragProvided.dragHandleProps}
-                    isDragging={dragSnapshot.isDragging}
-                    thumbnailHeight={thumbnailHeight}
-                    zoomLevel={zoomLevel}
-                    totalPages={pages.length}
-                  />
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={customCollisionDetection}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext items={pages.map((p) => p.id)} strategy={rectSortingStrategy}>
+        <div
+          data-testid="thumbnail-grid"
+          className="flex flex-wrap gap-5 p-4 min-h-[200px] rounded-xl transition-colors items-start"
+        >
+          {pages.map((page, index) => (
+            <SortableThumbnailCard
+              key={page.id}
+              page={page}
+              displayIndex={index}
+              index={index}
+              onRotate={onRotate}
+              onRotateCW={onRotateCW}
+              onRotateCCW={onRotateCCW}
+              onDelete={onDelete}
+              thumbnailHeight={thumbnailHeight}
+              zoomLevel={zoomLevel}
+              totalPages={pages.length}
+            />
+          ))}
+        </div>
+      </SortableContext>
+
+      <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+        {activePage && activeIndex !== -1 ? (
+          <div className="rotate-2 scale-105 shadow-2xl pointer-events-none">
+            <ThumbnailCard
+              page={activePage}
+              displayIndex={activeIndex}
+              index={activeIndex}
+              onDelete={onDelete}
+              thumbnailHeight={thumbnailHeight}
+              zoomLevel={zoomLevel}
+              totalPages={pages.length}
+            />
           </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 };
 
