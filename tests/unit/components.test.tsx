@@ -104,12 +104,13 @@ describe('UI Components', () => {
         <ThumbnailCard
           page={samplePage}
           index={0}
+          totalPages={3}
           onRotate={handleRotate}
           onDelete={handleDelete}
         />
       );
 
-      expect(screen.getByText('Page 1')).toBeInTheDocument();
+      expect(screen.getByText('1 / 3')).toBeInTheDocument();
       expect(screen.getByText('sample.pdf')).toBeInTheDocument();
       expect(screen.getByText('90°')).toBeInTheDocument();
 

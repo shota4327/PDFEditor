@@ -86,6 +86,7 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
                     isDragging={dragSnapshot.isDragging}
                     thumbnailHeight={thumbnailHeight}
                     zoomLevel={zoomLevel}
+                    totalPages={pages.length}
                   />
                 )}
               </Draggable>

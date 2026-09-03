@@ -5,48 +5,76 @@ import { RotateCcw, RotateCw } from 'lucide-react';
  * サムネイルカードフッターのプロパティ定義
  */
 export interface ThumbnailCardFooterProps {
+  /** 正規化された回転角度（度） */
+  rotation?: number;
   /** 反時計回り回転クリックハンドラ */
   onRotateCCW: () => void;
   /** 時計回り回転クリックハンドラ */
   onRotateCW: () => void;
+  /** 表示用ページ番号（0始まり） */
+  displayIndex?: number;
+  /** 総ページ数 */
+  totalPages?: number;
 }
 
 /**
- * サムネイルカード下部の時計回り・反時計回り回転ボタンを提供するフッター
+ * サムネイル下部のフローティングオーバーレイ（回転コントロールおよびページ数）
  */
 export const ThumbnailCardFooter: React.FC<ThumbnailCardFooterProps> = ({
+  rotation = 0,
   onRotateCCW,
   onRotateCW,
+  displayIndex = 0,
+  totalPages,
 }) => {
-  return (
-    <div className="bg-white border-t border-slate-100 flex items-stretch divide-x divide-slate-100 h-10">
-      <button
-        type="button"
-        data-testid="rotate-ccw-btn"
-        onClick={onRotateCCW}
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        aria-label="Rotate counter-clockwise"
-        className="flex-1 flex items-center justify-center gap-1.5 text-xs text-slate-600 font-medium hover:text-indigo-600 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100"
-        title="Rotate 90° CCW"
-      >
-        <RotateCcw className="w-3.5 h-3.5" />
-        <span>左回転</span>
-      </button>
+  const normalizedRotation = (((rotation % 360) + 360) % 360);
+  const pageLabel = totalPages ? `${displayIndex + 1} / ${totalPages}` : `${displayIndex + 1}`;
 
-      <button
-        type="button"
-        data-testid="rotate-cw-btn"
-        onClick={onRotateCW}
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        aria-label="Rotate clockwise"
-        className="flex-1 flex items-center justify-center gap-1.5 text-xs text-slate-600 font-medium hover:text-indigo-600 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100"
-        title="Rotate 90° CW"
-      >
-        <RotateCw className="w-3.5 h-3.5" />
-        <span>右回転</span>
-      </button>
+  return (
+    <div className="absolute bottom-2 left-2 right-2 z-20 flex items-center justify-between pointer-events-none select-none">
+      {/* 回転コントロールピル（回転量 + CCW + CW） */}
+      <div className="pointer-events-auto flex items-center gap-1 bg-white/75 backdrop-blur-md px-2 py-1 rounded-md border border-white/60 shadow-sm text-slate-700">
+        <span
+          data-testid="rotation-badge"
+          className="font-mono text-[11px] font-semibold pr-1"
+        >
+          {normalizedRotation}°
+        </span>
+        <button
+          type="button"
+          data-testid="rotate-ccw-btn"
+          onClick={onRotateCCW}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          aria-label="Rotate counter-clockwise"
+          className="p-1 rounded hover:bg-slate-100/80 hover:text-indigo-600 transition-colors cursor-pointer"
+          title="反時計回りに90度回転"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          data-testid="rotate-cw-btn"
+          onClick={onRotateCW}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          aria-label="Rotate clockwise"
+          className="p-1 rounded hover:bg-slate-100/80 hover:text-indigo-600 transition-colors cursor-pointer"
+          title="時計回りに90度回転"
+        >
+          <RotateCw className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* ページ数ピル */}
+      <div className="pointer-events-auto bg-white/75 backdrop-blur-md px-2 py-1 rounded-md border border-white/60 shadow-sm">
+        <span
+          data-testid="page-number"
+          className="text-xs font-semibold text-slate-700"
+        >
+          {pageLabel}
+        </span>
+      </div>
     </div>
   );
 };

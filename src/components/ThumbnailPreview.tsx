@@ -65,20 +65,11 @@ export const ThumbnailPreview: React.FC<ThumbnailPreviewProps> = ({
     <div
       ref={previewRef}
       {...dragHandleProps}
+      data-testid="drag-handle"
       className="relative w-full bg-slate-200/70 p-1.5 flex items-center justify-center overflow-hidden transition-[height] duration-200 cursor-grab active:cursor-grabbing select-none"
       style={{ height: `${thumbnailHeight}px` }}
       title="ドラッグして順序を入れ替え"
     >
-      {/* ページ番号バッジ（左上） */}
-      <div className="absolute top-2 left-2 z-10 pointer-events-none">
-        <span
-          data-testid="page-number"
-          className="font-semibold text-white bg-slate-900/45 backdrop-blur-md px-2 py-0.5 rounded text-[11px] shadow-sm"
-        >
-          Page {displayIndex + 1}
-        </span>
-      </div>
-
       {thumbnailUrl ? (
         <div className="w-full h-full flex items-center justify-center pointer-events-none">
           <div
@@ -105,16 +96,6 @@ export const ThumbnailPreview: React.FC<ThumbnailPreviewProps> = ({
           <span className="text-xs">No Preview</span>
         </div>
       )}
-
-      {/* 回転角度バッジ（右下） */}
-      <div className="absolute bottom-2 right-2 z-10 pointer-events-none">
-        <span
-          data-testid="rotation-badge"
-          className="bg-slate-900/80 text-white text-[10px] px-1.5 py-0.5 rounded font-mono shadow backdrop-blur"
-        >
-          {normalizedRotation}°
-        </span>
-      </div>
     </div>
   );
 };

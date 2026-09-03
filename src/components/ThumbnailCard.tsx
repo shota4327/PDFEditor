@@ -35,10 +35,12 @@ interface ThumbnailCardProps {
   thumbnailHeight?: number;
   /** 現在のズーム倍率 */
   zoomLevel?: number;
+  /** ドキュメントの総ページ数 */
+  totalPages?: number;
 }
 
 /**
- * 個別 PDF ページのプレビュー表示、回転、削除、ドラッグハンドルを提供するカード
+ * 個別 PDF ページのプレビュー表示、回転、削除、ドラッグ操作を提供するカード
  */
 export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   page,
@@ -54,6 +56,7 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   isDragging = false,
   thumbnailHeight = 283,
   zoomLevel = 100,
+  totalPages,
 }) => {
   const idx = displayIndex !== undefined ? displayIndex : (index !== undefined ? index : 0);
   const normalizedRotation = (((page.rotation % 360) + 360) % 360);
@@ -86,7 +89,7 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
       data-page-index={idx}
       data-file-name={page.fileName}
       data-rotation={normalizedRotation}
-      className={`group relative bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col select-none ${
+      className={`group relative bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 select-none ${
         isDragging ? 'shadow-2xl border-indigo-500 ring-2 ring-indigo-400 z-50 opacity-90' : 'border-slate-200'
       }`}
     >
@@ -94,7 +97,6 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
         fileName={page.fileName}
         pageId={page.id}
         onDelete={onDelete}
-        dragHandleProps={dragHandleProps}
       />
 
       <ThumbnailPreview
@@ -107,8 +109,11 @@ export const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
       />
 
       <ThumbnailCardFooter
+        rotation={page.rotation}
         onRotateCCW={handleRotateCCWClick}
         onRotateCW={handleRotateCWClick}
+        displayIndex={idx}
+        totalPages={totalPages}
       />
     </div>
   );

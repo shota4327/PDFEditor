@@ -273,7 +273,7 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       await expect(cards).toHaveCount(3, { timeout: 10000 });
 
       for (let i = 0; i < 3; i++) {
-        await expect(cards.nth(i).locator('[data-testid="page-number"]')).toHaveText(`Page ${i + 1}`);
+        await expect(cards.nth(i).locator('[data-testid="page-number"]')).toHaveText(`${i + 1} / 3`);
       }
     });
 
