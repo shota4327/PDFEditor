@@ -1,41 +1,42 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { motion } from 'framer-motion';
 import ThumbnailCard, { ThumbnailCardProps } from './ThumbnailCard';
 
 /**
- * @dnd-kit の Sortable 機能を付与したページサムネイルカードコンポーネント
+ * @dnd-kit の Sortable 機能と Framer Motion レイアウトアニメーションを付与したカードコンポーネント
  */
 export const SortableThumbnailCard: React.FC<ThumbnailCardProps> = (props) => {
   const {
     attributes,
     listeners,
     setNodeRef,
-    transform,
-    transition,
     isDragging,
   } = useSortable({ id: props.page.id });
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 0 : undefined,
-    touchAction: 'none',
-  };
-
   return (
-    <ThumbnailCard
-      {...props}
-      innerRef={setNodeRef}
-      style={style}
-      isDragging={isDragging}
-      dragHandleProps={{
-        ...attributes,
-        ...listeners,
-        tabIndex: 0,
+    <motion.div
+      layout
+      transition={{
+        layout: { duration: 0.2, ease: 'easeOut' },
       }}
-    />
+      ref={setNodeRef}
+      style={{
+        opacity: isDragging ? 0.25 : 1,
+        touchAction: 'none',
+      }}
+      className="flex-shrink-0"
+    >
+      <ThumbnailCard
+        {...props}
+        isDragging={isDragging}
+        dragHandleProps={{
+          ...attributes,
+          ...listeners,
+          tabIndex: 0,
+        }}
+      />
+    </motion.div>
   );
 };
 

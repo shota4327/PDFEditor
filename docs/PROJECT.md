@@ -96,8 +96,8 @@ PDFEditor/
 │   │   ├── LoadingOverlay.tsx # 全画面ローディングオーバーレイ
 │   │   ├── DropZone.tsx      # ファイルドロップゾーン
 │   │   ├── DropZoneErrorBanner.tsx # エラー表示バナー
-│   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（@dnd-kit複数行2D並び替え）
-│   │   ├── SortableThumbnailCard.tsx # @dnd-kit Sortable機能ラッパー
+│   │   ├── ThumbnailGrid.tsx # サムネイルグリッド（@dnd-kit リアルタイム並び替え & pointerWithin衝突検出）
+│   │   ├── SortableThumbnailCard.tsx # @dnd-kit Sortable & Framer Motion layout アニメーションラッパー
 │   │   ├── ThumbnailCard.tsx # 各ページサムネイルカード（プレビュー・オーバーレイコンテナ）
 │   │   ├── ThumbnailCardHeader.tsx # 上部オーバーレイ（タイトル・削除ピルバッジ）
 │   │   ├── ThumbnailPreview.tsx    # サムネイル画像・回転プレビュー描画領域

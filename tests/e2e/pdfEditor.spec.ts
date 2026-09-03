@@ -272,6 +272,59 @@ test.describe('PDFEditor E2E Test Suite (Tiers 1 - 4)', () => {
       const lastCardAfterId = await cards.nth(4).getAttribute('data-page-id');
       expect(lastCardAfterId).toBe(firstCardBeforeId);
     });
+
+    test('T1.9: Mixed aspect ratio (Portrait & Landscape) drag & drop reordering without visual breaking (Issue #2)', async ({ page }) => {
+      const fileInput = page.locator('input[data-testid="file-input"]');
+      await fileInput.setInputFiles([SAMPLE_3PAGES]);
+
+      const cards = page.locator('[data-testid="thumbnail-card"]');
+      await expect(cards).toHaveCount(3, { timeout: 10000 });
+
+      // Rotate card 1 by 90° to make it Landscape (~400px width) while cards 0 & 2 remain Portrait (~200px width)
+      await cards.nth(1).locator('[data-testid="rotate-cw-btn"]').click();
+      await expect(cards.nth(1).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+      await page.waitForTimeout(300);
+
+      const box0 = await cards.nth(0).boundingBox();
+      const box1 = await cards.nth(1).boundingBox();
+      expect(box0).toBeTruthy();
+      expect(box1).toBeTruthy();
+      expect(box1!.width).toBeGreaterThan(box0!.width + 50);
+
+      const id1Before = await cards.nth(1).getAttribute('data-page-id');
+
+      // Drag Portrait card 0 past Landscape card 1 to card 2
+      const sourceHandle = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const targetHandle = cards.nth(2).locator('[data-testid="drag-handle"]');
+      const sourceBox = await sourceHandle.boundingBox();
+      const targetBox = await targetHandle.boundingBox();
+      if (sourceBox && targetBox) {
+        await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 15 });
+        await page.mouse.up();
+      }
+
+      // Verify DOM sequence updated: card 0 moved, landscape card 1 remains intact with 90°
+      const newCard0Id = await cards.nth(0).getAttribute('data-page-id');
+      expect(newCard0Id).toBe(id1Before);
+      await expect(cards.nth(0).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+
+      // Drag Landscape card (now index 0) back to position 1
+      const landSource = cards.nth(0).locator('[data-testid="drag-handle"]');
+      const landTarget = cards.nth(1).locator('[data-testid="drag-handle"]');
+      const landSourceBox = await landSource.boundingBox();
+      const landTargetBox = await landTarget.boundingBox();
+      if (landSourceBox && landTargetBox) {
+        await page.mouse.move(landSourceBox.x + landSourceBox.width / 2, landSourceBox.y + landSourceBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(landTargetBox.x + landTargetBox.width / 2, landTargetBox.y + landTargetBox.height / 2, { steps: 15 });
+        await page.mouse.up();
+      }
+
+      // Verify sequence updated correctly
+      await expect(cards.nth(1).locator('[data-testid="rotation-badge"]')).toHaveText('90°');
+    });
   });
 
   // =========================================================================

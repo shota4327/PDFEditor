@@ -7,6 +7,7 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  DragOverEvent,
   DragOverlay,
   pointerWithin,
   rectIntersection,
@@ -15,7 +16,6 @@ import {
 import {
   SortableContext,
   sortableKeyboardCoordinates,
-  rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableThumbnailCard from './SortableThumbnailCard';
 import ThumbnailCard from './ThumbnailCard';
@@ -53,7 +53,7 @@ const customCollisionDetection: CollisionDetection = (args) => {
 };
 
 /**
- * 読み込まれた全ページのサムネイルカードをレスポンシブなグリッドで配置し、@dnd-kitによる複数行2D並び替えを提供するコンポーネント
+ * 読み込まれた全ページのサムネイルカードをレスポンシブなグリッドで配置し、異なる縦横比混在でも崩れないリアルタイム並び替えを提供するコンポーネント
  */
 export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   pages,
@@ -78,6 +78,18 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = pages.findIndex((p) => p.id === active.id);
+    const newIndex = pages.findIndex((p) => p.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      onReorder(oldIndex, newIndex);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -105,9 +117,10 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
       sensors={sensors}
       collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={pages.map((p) => p.id)} strategy={rectSortingStrategy}>
+      <SortableContext items={pages.map((p) => p.id)} strategy={() => null}>
         <div
           data-testid="thumbnail-grid"
           className="flex flex-wrap gap-5 p-4 min-h-[200px] rounded-xl transition-colors items-start"
